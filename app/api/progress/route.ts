@@ -14,6 +14,6 @@ export async function POST(request: Request) {
   const now = Date.now();
   await env.DB.prepare(`INSERT INTO commander_progress (discord_id,hq_level,tech_center_level,barracks_level,research_speed,construction_speed,food,iron,gold,valor,tech_progress_json,updated_at)
     VALUES (?,?,?,?,?,?,?,?,?,?,?,?) ON CONFLICT(discord_id) DO UPDATE SET hq_level=excluded.hq_level,tech_center_level=excluded.tech_center_level,barracks_level=excluded.barracks_level,research_speed=excluded.research_speed,construction_speed=excluded.construction_speed,food=excluded.food,iron=excluded.iron,gold=excluded.gold,valor=excluded.valor,tech_progress_json=excluded.tech_progress_json,updated_at=excluded.updated_at`)
-    .bind(session.discordId,bounded(body.hqLevel,1,35),bounded(body.techCenterLevel,1,35),bounded(body.barracksLevel,1,35),bounded(body.researchSpeed,0,1000),bounded(body.constructionSpeed,0,1000),bounded(body.food,0,2_000_000_000),bounded(body.iron,0,2_000_000_000),bounded(body.gold,0,2_000_000_000),bounded(body.valor,0,10_000_000),JSON.stringify(techProgress),now).run();
+    .bind(session.discordId,bounded(body.hqLevel,1,35),bounded(body.techCenterLevel,1,35),bounded(body.barracksLevel,1,35),bounded(body.researchSpeed,0,1000),bounded(body.constructionSpeed,0,1000),bounded(body.food,0,100_000_000_000),bounded(body.iron,0,100_000_000_000),bounded(body.gold,0,100_000_000_000),bounded(body.valor,0,10_000_000),JSON.stringify(techProgress),now).run();
   return NextResponse.json({ ok:true, updatedAt:now });
 }
