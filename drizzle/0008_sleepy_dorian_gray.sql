@@ -1,0 +1,1 @@
+ALTER TABLE `commander_progress` ADD `gear_profile_json` text DEFAULT '{}' NOT NULL;

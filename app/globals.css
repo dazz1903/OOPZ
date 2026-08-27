@@ -1,7 +1,12 @@
 @import 'tailwindcss';
-:root { --background: #080b12; --foreground: #fff; }
+:root { --background: #070509; --foreground: #fff; --oopz-pink:#ff4fc8; --oopz-purple:#8b5cf6; }
 * { box-sizing: border-box; }
 html { scroll-behavior: smooth; }
-body { margin: 0; background: var(--background); color: var(--foreground); font-family: var(--font-geist-sans), Arial, sans-serif; }
+body { margin: 0; background: radial-gradient(circle at 78% -10%, #2a1038 0, transparent 32rem), radial-gradient(circle at 5% 20%, #180d2b 0, transparent 28rem), var(--background); color: var(--foreground); font-family: var(--font-geist-sans), Arial, sans-serif; }
 button, a, input, select { -webkit-tap-highlight-color: transparent; }
-::selection { background: #7c5cff; color: white; }
+::selection { background: #ec4899; color: white; }
+.oopz-hero { background: radial-gradient(circle at 85% 10%, rgba(255,79,200,.22),transparent 15rem),linear-gradient(135deg,#160d22 0%,#0c0811 58%,#21102b 100%); box-shadow:0 24px 70px rgba(73,25,91,.22); }
+input,select { color-scheme:dark; }
+::-webkit-scrollbar{width:10px;height:10px}::-webkit-scrollbar-track{background:#0a070d}::-webkit-scrollbar-thumb{background:#4e2b5d;border-radius:999px;border:2px solid #0a070d}
+[class*="bg-[#0f1420]"],[class*="bg-[#111722]"]{background-color:#100b15!important}[class*="bg-[#151b28]"],[class*="bg-[#171d2b]"]{background-color:#191020!important}
+[class*="border-[#252c3d]"]{border-color:#352441!important}[class*="text-[#59d7ff]"],[class*="text-[#ffb45c]"]{color:#ff62ce!important}[class*="bg-[#168eb4]"],[class*="bg-[#ff8f3d]"]{background:linear-gradient(90deg,#8b5cf6,#ec4899)!important}

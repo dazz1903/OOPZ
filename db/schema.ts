@@ -144,5 +144,6 @@ export const commanderProgress = sqliteTable('commander_progress', {
   techProgressJson: text('tech_progress_json').notNull().default('{}'),
   heroProfileJson: text('hero_profile_json').notNull().default('{}'),
   droneProfileJson: text('drone_profile_json').notNull().default('{}'),
+  gearProfileJson: text('gear_profile_json').notNull().default('{}'),
   updatedAt: integer('updated_at', { mode: 'timestamp' }).notNull(),
 }, (table) => [uniqueIndex('idx_commander_progress_discord').on(table.discordId)]);
