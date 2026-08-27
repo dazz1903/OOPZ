@@ -124,3 +124,19 @@ export const battleAnalysisUsage = sqliteTable('battle_analysis_usage', {
   status: text('status').notNull().default('processing'),
   createdAt: integer('created_at', { mode: 'timestamp' }).notNull(),
 }, (table) => [uniqueIndex('idx_battle_usage_member_week').on(table.memberId, table.weekKey)]);
+
+export const commanderProgress = sqliteTable('commander_progress', {
+  id: integer('id').primaryKey({ autoIncrement: true }),
+  discordId: text('discord_id').notNull(),
+  hqLevel: integer('hq_level').notNull().default(1),
+  techCenterLevel: integer('tech_center_level').notNull().default(1),
+  barracksLevel: integer('barracks_level').notNull().default(1),
+  researchSpeed: integer('research_speed').notNull().default(0),
+  constructionSpeed: integer('construction_speed').notNull().default(0),
+  food: integer('food').notNull().default(0),
+  iron: integer('iron').notNull().default(0),
+  gold: integer('gold').notNull().default(0),
+  valor: integer('valor').notNull().default(0),
+  techProgressJson: text('tech_progress_json').notNull().default('{}'),
+  updatedAt: integer('updated_at', { mode: 'timestamp' }).notNull(),
+}, (table) => [uniqueIndex('idx_commander_progress_discord').on(table.discordId)]);
