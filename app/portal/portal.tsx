@@ -11,7 +11,7 @@ type Tab = 'personal' | 'alliance' | 'compare' | 'deepdive' | 'growth' | 'report
 const baseNav: [Tab, string, string][] = [['personal','⌂','Personal'],['alliance','◉','Alliance'],['compare','↕','Compare'],['deepdive','⌁','Deep dive'],['growth','⌃','Growth lab'],['reports','◇','Battle lab'],['purchases','€','Purchase engine'],['guides','≡','Guides']];
 type Claim = { discordId: string; discordName: string; lwmaPlayerId: string; playerName: string; requestedAt: number };
 type LinkedMember = { discordId:string; discordName:string; status:string; lwmaPlayerId:string|null; playerName:string|null };
-type ProgressLeagueRow = { playerName:string; hqLevel:number; techCenterLevel:number; barracksLevel:number; researchSpeed:number; techProgress:Record<string,number>; updatedAt:number };
+type ProgressLeagueRow = { playerName:string; hqLevel:number; techCenterLevel:number; barracksLevel:number; researchSpeed:number; techCenterCount:number; workerCount:number; buildingLevels:Record<string,number>; techProgress:Record<string,number>; updatedAt:number };
 function compact(value: number | null | undefined) { return value == null ? '—' : new Intl.NumberFormat('en', { notation: 'compact', maximumFractionDigits: 1 }).format(value); }
 
 function Stat({ label, value, note }: { label: string; value: string; note: string }) {
