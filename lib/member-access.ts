@@ -13,7 +13,9 @@ export type MemberAccess = {
   player: PlayerRecord | null;
 };
 
-export type VsScoreRecord = { weekStart: string; playerName: string; points: number; rank: number; capturedAt: number };
+export type VsScoreRecord = { weekStart: string; playerName: string; points: number; rank: number; daily: Array<number | null>; capturedAt: number };
+export type ArenaRecord = { playerName: string; score: number; squadPower: number; serverRank: number };
+export type HeroPowerRecord = { playerName: string; heroPower: number; serverRank: number };
 
 export function configuredAdmin(discordId: string) {
   return (process.env.DISCORD_ADMIN_USER_IDS ?? '').split(',').map((id) => id.trim()).filter(Boolean).includes(discordId);
@@ -62,6 +64,20 @@ export async function listPlayers() {
 export async function listCurrentVsScores() {
   const latest = await env.DB.prepare('SELECT MAX(week_start) AS week_start FROM vs_scores').first<{ week_start: string | null }>();
   if (!latest?.week_start) return [] as VsScoreRecord[];
-  const result = await env.DB.prepare('SELECT week_start, player_name, points, rank, captured_at FROM vs_scores WHERE week_start=? ORDER BY rank').bind(latest.week_start).all<Record<string, unknown>>();
-  return result.results.map((row) => ({ weekStart: String(row.week_start), playerName: String(row.player_name), points: Number(row.points), rank: Number(row.rank), capturedAt: Number(row.captured_at) })) satisfies VsScoreRecord[];
+  const result = await env.DB.prepare('SELECT week_start, player_name, points, rank, mon_points, tue_points, wed_points, thu_points, fri_points, sat_points, captured_at FROM vs_scores WHERE week_start=? ORDER BY rank').bind(latest.week_start).all<Record<string, unknown>>();
+  return result.results.map((row) => ({ weekStart: String(row.week_start), playerName: String(row.player_name), points: Number(row.points), rank: Number(row.rank), daily: [row.mon_points,row.tue_points,row.wed_points,row.thu_points,row.fri_points,row.sat_points].map((value) => value == null ? null : Number(value)), capturedAt: Number(row.captured_at) })) satisfies VsScoreRecord[];
+}
+
+export async function listCurrentArena() {
+  const latest = await env.DB.prepare('SELECT MAX(capture_date) AS capture_date FROM arena_rankings').first<{ capture_date: string | null }>();
+  if (!latest?.capture_date) return [] as ArenaRecord[];
+  const result = await env.DB.prepare('SELECT player_name, score, squad_power, server_rank FROM arena_rankings WHERE capture_date=? ORDER BY server_rank').bind(latest.capture_date).all<Record<string, unknown>>();
+  return result.results.map((row) => ({ playerName:String(row.player_name), score:Number(row.score), squadPower:Number(row.squad_power), serverRank:Number(row.server_rank) })) satisfies ArenaRecord[];
+}
+
+export async function listCurrentHeroPower() {
+  const latest = await env.DB.prepare('SELECT MAX(capture_date) AS capture_date FROM hero_power_rankings').first<{ capture_date: string | null }>();
+  if (!latest?.capture_date) return [] as HeroPowerRecord[];
+  const result = await env.DB.prepare('SELECT player_name, hero_power, server_rank FROM hero_power_rankings WHERE capture_date=? ORDER BY server_rank').bind(latest.capture_date).all<Record<string, unknown>>();
+  return result.results.map((row) => ({ playerName:String(row.player_name), heroPower:Number(row.hero_power), serverRank:Number(row.server_rank) })) satisfies HeroPowerRecord[];
 }

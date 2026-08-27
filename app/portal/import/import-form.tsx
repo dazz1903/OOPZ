@@ -13,8 +13,10 @@ export function ImportForm() {
       method: 'POST', headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify(Array.isArray(parsed) ? { rows: parsed } : parsed),
     });
-    const body = await response.json() as { imported?: number; vsImported?: number; error?: string };
-    setResult(response.ok ? `Imported ${body.imported} members and ${body.vsImported ?? 0} weekly scores.` : body.error ?? 'Import failed.');
+    const body = await response.json() as { imported?: number; vsImported?: number; arenaImported?: number; heroPowerImported?: number; error?: string };
+    setResult(response.ok
+      ? `Imported ${body.imported} members, ${body.vsImported ?? 0} weekly scores, ${body.arenaImported ?? 0} arena records and ${body.heroPowerImported ?? 0} hero-power records.`
+      : body.error ?? 'Import failed.');
   }
   return <form onSubmit={submit}>
     <textarea name="rows" aria-label="LWMA roster JSON" required style={{ width: '100%', minHeight: 320 }} />

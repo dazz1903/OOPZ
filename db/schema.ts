@@ -54,8 +54,28 @@ export const vsScores = sqliteTable('vs_scores', {
   playerName: text('player_name').notNull(),
   points: integer('points').notNull().default(0),
   rank: integer('rank').notNull(),
+  monPoints: integer('mon_points'),
+  tuePoints: integer('tue_points'),
+  wedPoints: integer('wed_points'),
+  thuPoints: integer('thu_points'),
+  friPoints: integer('fri_points'),
+  satPoints: integer('sat_points'),
   capturedAt: integer('captured_at', { mode: 'timestamp' }).notNull(),
 }, (table) => [uniqueIndex('idx_vs_scores_week_player').on(table.weekStart, table.playerName), index('idx_vs_scores_week_rank').on(table.weekStart, table.rank)]);
+
+export const arenaRankings = sqliteTable('arena_rankings', {
+  id: integer('id').primaryKey({ autoIncrement: true }),
+  captureDate: text('capture_date').notNull(), playerName: text('player_name').notNull(),
+  score: integer('score').notNull(), squadPower: integer('squad_power').notNull(), serverRank: integer('server_rank').notNull(),
+  capturedAt: integer('captured_at', { mode: 'timestamp' }).notNull(),
+}, (table) => [uniqueIndex('idx_arena_date_player').on(table.captureDate, table.playerName), index('idx_arena_date_rank').on(table.captureDate, table.serverRank)]);
+
+export const heroPowerRankings = sqliteTable('hero_power_rankings', {
+  id: integer('id').primaryKey({ autoIncrement: true }),
+  captureDate: text('capture_date').notNull(), playerName: text('player_name').notNull(),
+  heroPower: integer('hero_power').notNull(), serverRank: integer('server_rank').notNull(),
+  capturedAt: integer('captured_at', { mode: 'timestamp' }).notNull(),
+}, (table) => [uniqueIndex('idx_hero_power_date_player').on(table.captureDate, table.playerName), index('idx_hero_power_date_rank').on(table.captureDate, table.serverRank)]);
 
 export const playerSnapshots = sqliteTable('player_snapshots', {
   id: integer('id').primaryKey({ autoIncrement: true }),
