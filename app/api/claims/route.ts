@@ -16,9 +16,21 @@ export async function POST(request: Request) {
   if (!player) return NextResponse.json({ error: 'That commander is not in the current OOPZ roster.' }, { status: 404 });
   const occupied = await env.DB.prepare("SELECT discord_id FROM members WHERE lwma_player_id=? AND verification_status='approved'").bind(playerId).first();
   if (occupied) return NextResponse.json({ error: 'That commander is already linked to another Discord member.' }, { status: 409 });
+  if (access.isAdmin) {
+    const now = Date.now();
+    await env.DB.batch([
+      env.DB.prepare(`INSERT INTO identity_claims (discord_id, lwma_player_id, status, requested_at, decided_at, decided_by)
+        VALUES (?, ?, 'approved', ?, ?, ?) ON CONFLICT(discord_id) DO UPDATE SET lwma_player_id=excluded.lwma_player_id,
+        status='approved', requested_at=excluded.requested_at, decided_at=excluded.decided_at, decided_by=excluded.decided_by`)
+        .bind(session.discordId, playerId, now, now, session.discordId),
+      env.DB.prepare("UPDATE members SET verification_status='approved', player_name=?, lwma_player_id=?, approved_by=?, approved_at=? WHERE discord_id=?")
+        .bind(player.player_name, playerId, session.discordId, now, session.discordId),
+    ]);
+    return NextResponse.json({ ok: true, approved: true, playerName: player.player_name });
+  }
   await env.DB.prepare(`INSERT INTO identity_claims (discord_id, lwma_player_id, status, requested_at)
     VALUES (?, ?, 'pending', ?) ON CONFLICT(discord_id) DO UPDATE SET lwma_player_id=excluded.lwma_player_id, status='pending', requested_at=excluded.requested_at, decided_at=NULL, decided_by=NULL`)
     .bind(session.discordId, playerId, Date.now()).run();
   await env.DB.prepare("UPDATE members SET verification_status='pending', player_name=? WHERE discord_id=?").bind(player.player_name, session.discordId).run();
-  return NextResponse.json({ ok: true, playerName: player.player_name });
+  return NextResponse.json({ ok: true, approved: false, playerName: player.player_name });
 }
