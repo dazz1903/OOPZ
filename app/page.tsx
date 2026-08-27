@@ -1,5 +1,3 @@
-import Link from 'next/link';
-
 const focus = [
   { title: 'Build smarter', copy: 'Personal priorities based on your heroes, gear and account goals.' },
   { title: 'Fight better', copy: 'Battle-report feedback that turns losses into clear next actions.' },
@@ -11,7 +9,7 @@ export default function Home() {
     <main className="min-h-screen overflow-hidden bg-[#080b12] text-white">
       <nav className="relative z-10 mx-auto flex max-w-7xl items-center justify-between px-5 py-6 sm:px-8">
         <div className="flex items-center gap-3"><span className="grid h-11 w-11 place-items-center rounded-2xl bg-[#7c5cff] text-sm font-black shadow-[0_0_30px_rgba(124,92,255,.28)]">OP</span><div><p className="font-black tracking-[.18em]">OOPZ</p><p className="text-[10px] uppercase tracking-[.2em] text-[#77809a]">Alliance command</p></div></div>
-        <Link href="/auth/discord" className="rounded-xl bg-white px-5 py-3 text-sm font-black text-[#111420] transition hover:-translate-y-0.5">Continue with Discord</Link>
+        <a href="/auth/discord" className="rounded-xl bg-white px-5 py-3 text-sm font-black text-[#111420] transition hover:-translate-y-0.5">Continue with Discord</a>
       </nav>
 
       <section className="relative mx-auto grid max-w-7xl gap-14 px-5 pb-24 pt-14 sm:px-8 lg:grid-cols-[1fr_1.05fr] lg:items-center lg:pt-24">
@@ -20,7 +18,7 @@ export default function Home() {
           <p className="inline-flex items-center gap-2 rounded-full border border-[#2a3040] bg-[#111622] px-4 py-2 text-xs font-bold uppercase tracking-[.15em] text-[#a9b1ca]"><span className="h-2 w-2 rounded-full bg-[#66efb1] shadow-[0_0_12px_#66efb1]" /> Built for our Discord</p>
           <h1 className="mt-7 text-5xl font-black leading-[.92] tracking-[-.06em] sm:text-7xl">Know your account.<br /><span className="bg-gradient-to-r from-[#9a83ff] to-[#66d9ef] bg-clip-text text-transparent">Know your next move.</span></h1>
           <p className="mt-7 max-w-xl text-lg leading-8 text-[#98a1bb]">A private home for OOPZ members—personal progress, alliance intelligence, comparisons, battle analysis and smarter purchases.</p>
-          <div className="mt-9 flex flex-wrap gap-3"><Link href="/auth/discord" className="rounded-xl bg-[#7c5cff] px-6 py-4 text-sm font-black shadow-[0_16px_45px_rgba(124,92,255,.22)] transition hover:-translate-y-0.5">Sign in with Discord →</Link><a href="#inside" className="rounded-xl border border-[#303748] px-6 py-4 text-sm font-bold text-[#c8cde0] hover:bg-[#111622]">Explore the hub</a></div>
+          <div className="mt-9 flex flex-wrap gap-3"><a href="/auth/discord" className="rounded-xl bg-[#7c5cff] px-6 py-4 text-sm font-black shadow-[0_16px_45px_rgba(124,92,255,.22)] transition hover:-translate-y-0.5">Sign in with Discord →</a><a href="#inside" className="rounded-xl border border-[#303748] px-6 py-4 text-sm font-bold text-[#c8cde0] hover:bg-[#111622]">Explore the hub</a></div>
           <p className="mt-4 text-xs text-[#626b82]">Access is limited to verified members of the OOPZ Discord server.</p>
         </div>
 
