@@ -1,0 +1,7 @@
+@import 'tailwindcss';
+:root { --background: #080b12; --foreground: #fff; }
+* { box-sizing: border-box; }
+html { scroll-behavior: smooth; }
+body { margin: 0; background: var(--background); color: var(--foreground); font-family: var(--font-geist-sans), Arial, sans-serif; }
+button, a, input, select { -webkit-tap-highlight-color: transparent; }
+::selection { background: #7c5cff; color: white; }
