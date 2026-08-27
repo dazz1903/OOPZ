@@ -87,3 +87,11 @@ export const battleReports = sqliteTable('battle_reports', {
   analysis: text('analysis'),
   createdAt: integer('created_at', { mode: 'timestamp' }).notNull(),
 }, (table) => [index('idx_reports_member_date').on(table.memberId, table.createdAt)]);
+
+export const battleAnalysisUsage = sqliteTable('battle_analysis_usage', {
+  id: integer('id').primaryKey({ autoIncrement: true }),
+  memberId: integer('member_id').notNull().references(() => members.id),
+  weekKey: text('week_key').notNull(),
+  status: text('status').notNull().default('processing'),
+  createdAt: integer('created_at', { mode: 'timestamp' }).notNull(),
+}, (table) => [uniqueIndex('idx_battle_usage_member_week').on(table.memberId, table.weekKey)]);
