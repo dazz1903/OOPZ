@@ -48,6 +48,15 @@ export const ingestionRuns = sqliteTable('ingestion_runs', {
   importedAt: integer('imported_at', { mode: 'timestamp' }).notNull(),
 }, (table) => [index('idx_ingestion_runs_date').on(table.importedAt)]);
 
+export const vsScores = sqliteTable('vs_scores', {
+  id: integer('id').primaryKey({ autoIncrement: true }),
+  weekStart: text('week_start').notNull(),
+  playerName: text('player_name').notNull(),
+  points: integer('points').notNull().default(0),
+  rank: integer('rank').notNull(),
+  capturedAt: integer('captured_at', { mode: 'timestamp' }).notNull(),
+}, (table) => [uniqueIndex('idx_vs_scores_week_player').on(table.weekStart, table.playerName), index('idx_vs_scores_week_rank').on(table.weekStart, table.rank)]);
+
 export const playerSnapshots = sqliteTable('player_snapshots', {
   id: integer('id').primaryKey({ autoIncrement: true }),
   memberId: integer('member_id').notNull().references(() => members.id),

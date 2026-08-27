@@ -8,12 +8,13 @@ export function ImportForm() {
     event.preventDefault();
     const form = new FormData(event.currentTarget);
     setResult('Importing…');
+    const parsed = JSON.parse(String(form.get('rows') ?? '[]')) as unknown;
     const response = await fetch('/api/admin/import-lwma', {
       method: 'POST', headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ rows: JSON.parse(String(form.get('rows') ?? '[]')) }),
+      body: JSON.stringify(Array.isArray(parsed) ? { rows: parsed } : parsed),
     });
-    const body = await response.json() as { imported?: number; error?: string };
-    setResult(response.ok ? `Imported ${body.imported} members.` : body.error ?? 'Import failed.');
+    const body = await response.json() as { imported?: number; vsImported?: number; error?: string };
+    setResult(response.ok ? `Imported ${body.imported} members and ${body.vsImported ?? 0} weekly scores.` : body.error ?? 'Import failed.');
   }
   return <form onSubmit={submit}>
     <textarea name="rows" aria-label="LWMA roster JSON" required style={{ width: '100%', minHeight: 320 }} />

@@ -13,6 +13,8 @@ export type MemberAccess = {
   player: PlayerRecord | null;
 };
 
+export type VsScoreRecord = { weekStart: string; playerName: string; points: number; rank: number; capturedAt: number };
+
 export function configuredAdmin(discordId: string) {
   return (process.env.DISCORD_ADMIN_USER_IDS ?? '').split(',').map((id) => id.trim()).filter(Boolean).includes(discordId);
 }
@@ -55,4 +57,11 @@ export async function listPlayers() {
     kills: row.kills == null ? null : Number(row.kills), todayDonations: row.today_donations == null ? null : Number(row.today_donations),
     weeklyDonations: row.weekly_donations == null ? null : Number(row.weekly_donations), capturedAt: Number(row.captured_at ?? 0),
   })) satisfies PlayerRecord[];
+}
+
+export async function listCurrentVsScores() {
+  const latest = await env.DB.prepare('SELECT MAX(week_start) AS week_start FROM vs_scores').first<{ week_start: string | null }>();
+  if (!latest?.week_start) return [] as VsScoreRecord[];
+  const result = await env.DB.prepare('SELECT week_start, player_name, points, rank, captured_at FROM vs_scores WHERE week_start=? ORDER BY rank').bind(latest.week_start).all<Record<string, unknown>>();
+  return result.results.map((row) => ({ weekStart: String(row.week_start), playerName: String(row.player_name), points: Number(row.points), rank: Number(row.rank), capturedAt: Number(row.captured_at) })) satisfies VsScoreRecord[];
 }
