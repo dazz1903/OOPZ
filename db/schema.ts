@@ -139,7 +139,10 @@ export const commanderProgress = sqliteTable('commander_progress', {
   valor: integer('valor').notNull().default(0),
   techCenterCount: integer('tech_center_count').notNull().default(1),
   workerCount: integer('worker_count').notNull().default(2),
+  vehicleCenter: text('vehicle_center').notNull().default('Tank'),
   buildingLevelsJson: text('building_levels_json').notNull().default('{}'),
   techProgressJson: text('tech_progress_json').notNull().default('{}'),
+  heroProfileJson: text('hero_profile_json').notNull().default('{}'),
+  droneProfileJson: text('drone_profile_json').notNull().default('{}'),
   updatedAt: integer('updated_at', { mode: 'timestamp' }).notNull(),
 }, (table) => [uniqueIndex('idx_commander_progress_discord').on(table.discordId)]);

@@ -1,0 +1,5 @@
+import { env } from 'cloudflare:workers';
+import { NextResponse } from 'next/server';
+import { getSession } from '@/lib/session';
+
+export async function POST(request:Request){const session=await getSession();if(!session)return NextResponse.json({error:'Sign in required.'},{status:401});const body=await request.json().catch(()=>null) as {kind?:'hero'|'drone';profile?:unknown}|null;if(!body||!['hero','drone'].includes(body.kind??'')||!body.profile||typeof body.profile!=='object')return NextResponse.json({error:'Invalid lab profile.'},{status:400});const json=JSON.stringify(body.profile);if(json.length>20_000)return NextResponse.json({error:'Profile is too large.'},{status:400});const column=body.kind==='hero'?'hero_profile_json':'drone_profile_json';await env.DB.prepare(`INSERT INTO commander_progress (discord_id,${column},updated_at) VALUES (?,?,?) ON CONFLICT(discord_id) DO UPDATE SET ${column}=excluded.${column},updated_at=excluded.updated_at`).bind(session.discordId,json,Date.now()).run();return NextResponse.json({ok:true});}
