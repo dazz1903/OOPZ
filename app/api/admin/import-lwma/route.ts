@@ -17,7 +17,10 @@ function numberValue(value: string | number | undefined) {
 export async function POST(request: Request) {
   const session = await getSession();
   if (!session || !(await getMemberAccess(session.discordId)).isAdmin) return NextResponse.json({ error: 'Admin access required.' }, { status: 403 });
-  const body = await request.json().catch(() => null) as { rows?: LwmaRow[] } | null;
+  const contentType = request.headers.get('content-type') ?? '';
+  const body = contentType.includes('application/json')
+    ? await request.json().catch(() => null) as { rows?: LwmaRow[] } | null
+    : { rows: JSON.parse(String((await request.formData()).get('rows') ?? '[]')) as LwmaRow[] };
   const rows = (body?.rows ?? []).filter((row) => row.playerId && row.playerName).slice(0, 200);
   if (!rows.length) return NextResponse.json({ error: 'No LWMA roster rows supplied.' }, { status: 400 });
   const capturedAt = Date.now();
