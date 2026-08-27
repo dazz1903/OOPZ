@@ -1,5 +1,6 @@
 import { NextResponse } from 'next/server';
 import { getSession } from '@/lib/session';
+import { getMemberAccess } from '@/lib/member-access';
 
 function imageDataUrl(bytes: Uint8Array, mime: string) {
   let raw = '';
@@ -16,6 +17,8 @@ function extractOutputText(payload: { output_text?: string; output?: Array<{ con
 export async function POST(request: Request) {
   const session = await getSession();
   if (!session) return NextResponse.json({ error: 'Sign in with Discord first.' }, { status: 401 });
+  const access = await getMemberAccess(session.discordId);
+  if (!access.isAdmin && access.status !== 'approved') return NextResponse.json({ error: 'Your in-game commander must be approved before using battle analysis.' }, { status: 403 });
   if (!process.env.OPENAI_API_KEY) return NextResponse.json({ error: 'Battle analysis is ready but the AI key has not been configured yet.' }, { status: 503 });
   const form = await request.formData();
   const report = form.get('report');
@@ -31,7 +34,7 @@ export async function POST(request: Request) {
       max_output_tokens: 900,
       safety_identifier: `oopz_${session.discordId}`,
       instructions: 'You are the OOPZ battle analyst for Last War: Survival. Read only what is visible in the report. Be concise and practical. Return four sections: What happened, Biggest gap, Three next actions, and What not to spend on. Clearly mark uncertainty and never invent missing stats.',
-      input: [{ role: 'user', content: [{ type: 'input_text', text: 'Analyze this battle report and give personalized improvement priorities.' }, { type: 'input_image', image_url: imageDataUrl(bytes, report.type), detail: 'high' }] }],
+      input: [{ role: 'user', content: [{ type: 'input_text', text: `Analyze this battle report and give personalized improvement priorities. Verified commander context: ${access.player ? `${access.player.playerName}, power ${access.player.power}, HQ ${access.player.level ?? 'unknown'}, kills ${access.player.kills ?? 'unknown'}` : 'OOPZ administrator without a linked commander'}.` }, { type: 'input_image', image_url: imageDataUrl(bytes, report.type), detail: 'high' }] }],
     }),
   });
   if (!response.ok) return NextResponse.json({ error: 'The AI service could not analyze this report right now.' }, { status: 502 });

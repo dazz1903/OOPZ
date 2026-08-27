@@ -1,5 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { createSessionToken, SESSION_COOKIE } from '@/lib/session';
+import { syncMember } from '@/lib/member-access';
 
 type DiscordUser = { id: string; username: string; global_name?: string | null; avatar?: string | null };
 type DiscordMember = { roles: string[]; nick?: string | null; pending?: boolean };
@@ -40,7 +41,9 @@ export async function GET(request: NextRequest) {
   if (allowedRoles.length && !member.roles.some((role) => allowedRoles.includes(role))) return failed(request, 'missing-discord-role');
 
   const expires = Date.now() + 12 * 60 * 60 * 1000;
-  const sessionToken = await createSessionToken({ discordId: user.id, username: user.username, displayName: member.nick ?? user.global_name ?? user.username, avatar: user.avatar ?? null, roles: member.roles, expires });
+  const session = { discordId: user.id, username: user.username, displayName: member.nick ?? user.global_name ?? user.username, avatar: user.avatar ?? null, roles: member.roles, expires };
+  await syncMember(session);
+  const sessionToken = await createSessionToken(session);
   const response = NextResponse.redirect(new URL('/portal', appUrl));
   response.cookies.set(SESSION_COOKIE, sessionToken, { httpOnly: true, secure: process.env.NODE_ENV === 'production', sameSite: 'lax', path: '/', expires: new Date(expires) });
   response.cookies.delete('oopz_oauth_state');

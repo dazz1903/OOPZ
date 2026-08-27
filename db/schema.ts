@@ -3,11 +3,50 @@ import { index, integer, sqliteTable, text, uniqueIndex } from 'drizzle-orm/sqli
 export const members = sqliteTable('members', {
   id: integer('id').primaryKey({ autoIncrement: true }),
   discordId: text('discord_id').notNull(),
-  playerName: text('player_name').notNull(),
+  discordUsername: text('discord_username'),
+  displayName: text('display_name'),
+  playerName: text('player_name'),
+  lwmaPlayerId: text('lwma_player_id'),
   role: text('role').notNull().default('member'),
+  verificationStatus: text('verification_status').notNull().default('unlinked'),
+  approvedBy: text('approved_by'),
+  approvedAt: integer('approved_at', { mode: 'timestamp' }),
   active: integer('active', { mode: 'boolean' }).notNull().default(true),
   joinedAt: integer('joined_at', { mode: 'timestamp' }).notNull(),
-}, (table) => [uniqueIndex('idx_members_discord_id').on(table.discordId), index('idx_members_active').on(table.active)]);
+}, (table) => [uniqueIndex('idx_members_discord_id').on(table.discordId), uniqueIndex('idx_members_lwma_player_id').on(table.lwmaPlayerId), index('idx_members_active').on(table.active)]);
+
+export const alliancePlayers = sqliteTable('alliance_players', {
+  id: integer('id').primaryKey({ autoIncrement: true }),
+  lwmaPlayerId: text('lwma_player_id').notNull(),
+  playerName: text('player_name').notNull(),
+  power: integer('power').notNull().default(0),
+  level: integer('level'),
+  allianceRank: text('alliance_rank'),
+  kills: integer('kills'),
+  todayDonations: integer('today_donations'),
+  weeklyDonations: integer('weekly_donations'),
+  source: text('source').notNull().default('lwma'),
+  capturedAt: integer('captured_at', { mode: 'timestamp' }).notNull(),
+  active: integer('active', { mode: 'boolean' }).notNull().default(true),
+}, (table) => [uniqueIndex('idx_alliance_players_lwma_id').on(table.lwmaPlayerId), index('idx_alliance_players_power').on(table.power), index('idx_alliance_players_active').on(table.active)]);
+
+export const identityClaims = sqliteTable('identity_claims', {
+  id: integer('id').primaryKey({ autoIncrement: true }),
+  discordId: text('discord_id').notNull(),
+  lwmaPlayerId: text('lwma_player_id').notNull(),
+  status: text('status').notNull().default('pending'),
+  requestedAt: integer('requested_at', { mode: 'timestamp' }).notNull(),
+  decidedAt: integer('decided_at', { mode: 'timestamp' }),
+  decidedBy: text('decided_by'),
+}, (table) => [uniqueIndex('idx_claims_discord_id').on(table.discordId), index('idx_claims_status').on(table.status), index('idx_claims_player').on(table.lwmaPlayerId)]);
+
+export const ingestionRuns = sqliteTable('ingestion_runs', {
+  id: integer('id').primaryKey({ autoIncrement: true }),
+  source: text('source').notNull(),
+  recordCount: integer('record_count').notNull(),
+  importedBy: text('imported_by').notNull(),
+  importedAt: integer('imported_at', { mode: 'timestamp' }).notNull(),
+}, (table) => [index('idx_ingestion_runs_date').on(table.importedAt)]);
 
 export const playerSnapshots = sqliteTable('player_snapshots', {
   id: integer('id').primaryKey({ autoIncrement: true }),
