@@ -1,0 +1,30 @@
+{
+  "$schema": "node_modules/wrangler/config-schema.json",
+  "name": "oopz-alliance-command",
+  "main": "vinext/server/app-router-entry",
+  "compatibility_date": "2026-05-15",
+  "compatibility_flags": ["nodejs_compat"],
+  "vars": {
+    "APP_URL": "https://lwoopz.dpdns.org",
+    "DISCORD_CLIENT_ID": "1542515013129085058",
+    "DISCORD_GUILD_ID": "1524481730692513822",
+    "OPENAI_MODEL": "gpt-5.6-luna"
+  },
+  "d1_databases": [
+    {
+      "binding": "DB",
+      "database_name": "oopz-alliance-db",
+      "database_id": "adf80cc1-f72d-4b60-98d4-0089e57d1456",
+      "migrations_dir": "drizzle"
+    }
+  ],
+  "observability": {
+    "enabled": true
+  },
+  "routes": [
+    {
+      "pattern": "lwoopz.dpdns.org",
+      "custom_domain": true
+    }
+  ]
+}
