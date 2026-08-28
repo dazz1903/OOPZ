@@ -309,19 +309,42 @@ function Number({
   max: number;
 }) {
   return (
-    <label>
+    <div>
       <span className="text-[10px] text-[#8e7d96]">{label}</span>
-      <input
-        type="number"
-        min={min}
-        max={max}
-        value={value}
-        onChange={(e) =>
-          onChange(Math.min(max, Math.max(min, Number(e.target.value) || min)))
-        }
-        className="mt-1 w-full rounded-lg bg-[#25182e] px-3 py-2 text-center font-black"
-      />
-    </label>
+      <div className="mt-1 flex h-11 min-w-[126px] items-center overflow-hidden rounded-xl border border-[#4c3158] bg-[#130d18]">
+        <button
+          type="button"
+          aria-label={`Decrease ${label.toLowerCase()}`}
+          onClick={() => onChange(value - 1)}
+          disabled={value <= min}
+          className="grid h-full w-10 shrink-0 place-items-center text-lg font-black text-[#d5b4df] hover:bg-[#2b1935] disabled:opacity-25"
+        >
+          −
+        </button>
+        <input
+          aria-label={label}
+          type="number"
+          inputMode="numeric"
+          min={min}
+          max={max}
+          value={value}
+          onChange={(e) => {
+            const entered = e.target.value === "" ? min : Number(e.target.value);
+            onChange(Math.min(max, Math.max(min, entered)));
+          }}
+          className="h-full min-w-0 flex-1 border-x border-[#4c3158] bg-black/30 px-1 text-center text-base font-black text-white outline-none [appearance:textfield]"
+        />
+        <button
+          type="button"
+          aria-label={`Increase ${label.toLowerCase()}`}
+          onClick={() => onChange(value + 1)}
+          disabled={value >= max}
+          className="grid h-full w-10 shrink-0 place-items-center text-lg font-black text-[#ff71d3] hover:bg-[#2b1935] disabled:opacity-25"
+        >
+          +
+        </button>
+      </div>
+    </div>
   );
 }
 
