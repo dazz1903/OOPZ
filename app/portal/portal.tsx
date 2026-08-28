@@ -1,131 +1,1428 @@
-'use client';
+"use client";
 
-import { FormEvent, useMemo, useState } from 'react';
-import type { OopzSession } from '@/lib/session';
-import type { ArenaRecord, HeroPowerRecord, MemberAccess, PlayerRecord, VsScoreRecord } from '@/lib/member-access';
-import { scoreItems, type Focus } from '@/lib/game-data/deals-db';
-import { GrowthPlanner } from './growth-planner';
-import { HeroLab } from './hero-lab';
-import { DroneLab } from './drone-lab';
-import { GearLab } from './gear-lab';
-import { CommanderHome } from './commander-home';
-import type { CommanderProgress } from '@/lib/commander-progress';
-import {T10_TREE} from '@/lib/game-data/t10-tree';
-import {calcT10PrereqCosts} from '@/lib/game-data/building-upgrade-costs';
+import { FormEvent, useMemo, useState } from "react";
+import type { OopzSession } from "@/lib/session";
+import type {
+  ArenaRecord,
+  HeroPowerRecord,
+  MemberAccess,
+  PlayerRecord,
+  VsScoreRecord,
+} from "@/lib/member-access";
+import { scoreItems, type Focus } from "@/lib/game-data/deals-db";
+import { GrowthPlanner } from "./growth-planner";
+import { HeroLab } from "./hero-lab";
+import { DroneLab } from "./drone-lab";
+import { GearLab } from "./gear-lab";
+import { CommanderHome } from "./commander-home";
+import type { CommanderProgress } from "@/lib/commander-progress";
+import { T10_TREE } from "@/lib/game-data/t10-tree";
+import { calcT10PrereqCosts } from "@/lib/game-data/building-upgrade-costs";
 
-type Tab = 'personal' | 'alliance' | 'compare' | 'deepdive' | 'growth' | 'heroes' | 'drone' | 'gear' | 'reports' | 'purchases' | 'guides' | 'admin';
-const baseNav: [Tab, string, string][] = [['personal','⌂','Command home'],['alliance','◉','Alliance'],['compare','↕','Compare'],['deepdive','⌁','Deep dive'],['growth','⌃','Growth lab'],['heroes','★','Hero lab'],['drone','✦','Drone lab'],['gear','◆','Gear lab'],['reports','◇','Battle lab'],['purchases','€','Purchase engine'],['guides','≡','Guides']];
-type Claim = { discordId: string; discordName: string; lwmaPlayerId: string; playerName: string; requestedAt: number };
-type LinkedMember = { discordId:string; discordName:string; status:string; lwmaPlayerId:string|null; playerName:string|null };
-type ProgressLeagueRow = { playerName:string; hqLevel:number; techCenterLevel:number; barracksLevel:number; researchSpeed:number; techCenterCount:number; workerCount:number; vehicleCenter:'Tank'|'Air'|'Missile'; buildingLevels:Record<string,number>; techProgress:Record<string,number>; updatedAt:number };
-function compact(value: number | null | undefined) { return value == null ? '—' : new Intl.NumberFormat('en', { notation: 'compact', maximumFractionDigits: 1 }).format(value); }
-
-function Stat({ label, value, note }: { label: string; value: string; note: string }) {
-  return <div className="rounded-2xl border border-[#252c3d] bg-[#111722] p-5"><p className="text-[11px] font-bold uppercase tracking-[.14em] text-[#66718a]">{label}</p><p className="mt-3 text-3xl font-black">{value}</p><p className="mt-2 text-xs text-[#66efb1]">{note}</p></div>;
+type Tab =
+  | "personal"
+  | "alliance"
+  | "compare"
+  | "deepdive"
+  | "growth"
+  | "heroes"
+  | "drone"
+  | "gear"
+  | "reports"
+  | "purchases"
+  | "guides"
+  | "admin";
+const baseNav: [Tab, string, string][] = [
+  ["personal", "⌂", "Command home"],
+  ["alliance", "◉", "Alliance"],
+  ["compare", "↕", "Compare"],
+  ["deepdive", "⌁", "Deep dive"],
+  ["growth", "⌃", "Growth lab"],
+  ["heroes", "★", "Hero lab"],
+  ["drone", "✦", "Drone lab"],
+  ["gear", "◆", "Gear lab"],
+  ["reports", "◇", "Battle lab"],
+  ["purchases", "€", "Purchase engine"],
+  ["guides", "≡", "Guides"],
+];
+type Claim = {
+  discordId: string;
+  discordName: string;
+  lwmaPlayerId: string;
+  playerName: string;
+  requestedAt: number;
+};
+type LinkedMember = {
+  discordId: string;
+  discordName: string;
+  role: string;
+  status: string;
+  lwmaPlayerId: string | null;
+  playerName: string | null;
+};
+type ProgressLeagueRow = {
+  playerName: string;
+  hqLevel: number;
+  techCenterLevel: number;
+  barracksLevel: number;
+  researchSpeed: number;
+  techCenterCount: number;
+  workerCount: number;
+  vehicleCenter: "Tank" | "Air" | "Missile";
+  buildingLevels: Record<string, number>;
+  techProgress: Record<string, number>;
+  updatedAt: number;
+};
+function compact(value: number | null | undefined) {
+  return value == null
+    ? "—"
+    : new Intl.NumberFormat("en", {
+        notation: "compact",
+        maximumFractionDigits: 1,
+      }).format(value);
 }
 
-export function Portal({ member, access, players, vsScores, arena, heroPower, progress, progressLeague, pendingClaims, linkedMembers }: { member: OopzSession; access: MemberAccess; players: PlayerRecord[]; vsScores: VsScoreRecord[]; arena: ArenaRecord[]; heroPower: HeroPowerRecord[]; progress: CommanderProgress; progressLeague: ProgressLeagueRow[]; pendingClaims: Claim[]; linkedMembers: LinkedMember[] }) {
-  const [tab, setTab] = useState<Tab>('personal');
-  const [focus, setFocus] = useState<Focus>('Balanced');
+function Stat({
+  label,
+  value,
+  note,
+}: {
+  label: string;
+  value: string;
+  note: string;
+}) {
+  return (
+    <div className="rounded-2xl border border-[#252c3d] bg-[#111722] p-5">
+      <p className="text-[11px] font-bold uppercase tracking-[.14em] text-[#66718a]">
+        {label}
+      </p>
+      <p className="mt-3 text-3xl font-black">{value}</p>
+      <p className="mt-2 text-xs text-[#66efb1]">{note}</p>
+    </div>
+  );
+}
+
+export function Portal({
+  member,
+  access,
+  players,
+  vsScores,
+  arena,
+  heroPower,
+  progress,
+  progressLeague,
+  pendingClaims,
+  linkedMembers,
+}: {
+  member: OopzSession;
+  access: MemberAccess;
+  players: PlayerRecord[];
+  vsScores: VsScoreRecord[];
+  arena: ArenaRecord[];
+  heroPower: HeroPowerRecord[];
+  progress: CommanderProgress;
+  progressLeague: ProgressLeagueRow[];
+  pendingClaims: Claim[];
+  linkedMembers: LinkedMember[];
+}) {
+  const [tab, setTab] = useState<Tab>("personal");
+  const [focus, setFocus] = useState<Focus>("Balanced");
   const [reportFiles, setReportFiles] = useState<File[]>([]);
-  const [analysis, setAnalysis] = useState('');
+  const [analysis, setAnalysis] = useState("");
   const [analyzing, setAnalyzing] = useState(false);
   const [claims, setClaims] = useState(pendingClaims);
-  const [selectedCommander, setSelectedCommander] = useState('');
-  const [linkMessage, setLinkMessage] = useState('');
+  const [selectedCommander, setSelectedCommander] = useState("");
+  const [linkMessage, setLinkMessage] = useState("");
   const [linking, setLinking] = useState(false);
-  const [memberLinks,setMemberLinks]=useState(linkedMembers);
-  const [manualDiscordId,setManualDiscordId]=useState('');
-  const [manualCommander,setManualCommander]=useState('');
-  const [adminMessage,setAdminMessage]=useState('');
-  const nav = access.isAdmin ? [...baseNav, ['admin','⚙','Admin'] as [Tab,string,string]] : baseNav;
-  const focusCounts={Tank:0,Air:0,Missile:0}; progressLeague.forEach(row=>focusCounts[row.vehicleCenter]++); const focusTotal=progressLeague.length;
-  const t10Nodes=Object.values(T10_TREE); const closestT10=progressLeague.map(row=>{const techRemaining=t10Nodes.reduce((sum,node)=>sum+Math.max(0,node.levels.length-(row.techProgress[node.id]??0)),0);const buildingRemaining=calcT10PrereqCosts(row.hqLevel,row.techCenterLevel,row.barracksLevel).combined.levelsNeeded;return{...row,techRemaining,buildingRemaining,totalRemaining:techRemaining+buildingRemaining}}).sort((a,b)=>a.totalRemaining-b.totalRemaining).slice(0,5);
+  const [memberLinks, setMemberLinks] = useState(linkedMembers);
+  const [manualDiscordId, setManualDiscordId] = useState("");
+  const [manualCommander, setManualCommander] = useState("");
+  const [observerDiscordId, setObserverDiscordId] = useState("");
+  const [adminMessage, setAdminMessage] = useState("");
+  const nav = access.isAdmin
+    ? [...baseNav, ["admin", "⚙", "Admin"] as [Tab, string, string]]
+    : baseNav;
+  const focusCounts = { Tank: 0, Air: 0, Missile: 0 };
+  progressLeague.forEach((row) => focusCounts[row.vehicleCenter]++);
+  const focusTotal = progressLeague.length;
+  const t10Nodes = Object.values(T10_TREE);
+  const closestT10 = progressLeague
+    .map((row) => {
+      const techRemaining = t10Nodes.reduce(
+        (sum, node) =>
+          sum +
+          Math.max(0, node.levels.length - (row.techProgress[node.id] ?? 0)),
+        0,
+      );
+      const buildingRemaining = calcT10PrereqCosts(
+        row.hqLevel,
+        row.techCenterLevel,
+        row.barracksLevel,
+      ).combined.levelsNeeded;
+      return {
+        ...row,
+        techRemaining,
+        buildingRemaining,
+        totalRemaining: techRemaining + buildingRemaining,
+      };
+    })
+    .sort((a, b) => a.totalRemaining - b.totalRemaining)
+    .slice(0, 5);
   const player = access.player;
-  const myVs = player ? vsScores.find((score) => score.playerName === player.playerName) : undefined;
+  const myVs = player
+    ? vsScores.find((score) => score.playerName === player.playerName)
+    : undefined;
   const rankedVs = [...vsScores].sort((a, b) => a.points - b.points);
-  const allianceMedianVs = rankedVs.length ? rankedVs[Math.floor((rankedVs.length - 1) / 2)].points : 0;
-  const peerNames = player ? new Set(players.filter((item) => item.power >= player.power * .8 && item.power <= player.power * 1.2).map((item) => item.playerName)) : new Set<string>();
+  const allianceMedianVs = rankedVs.length
+    ? rankedVs[Math.floor((rankedVs.length - 1) / 2)].points
+    : 0;
+  const peerNames = player
+    ? new Set(
+        players
+          .filter(
+            (item) =>
+              item.power >= player.power * 0.8 &&
+              item.power <= player.power * 1.2,
+          )
+          .map((item) => item.playerName),
+      )
+    : new Set<string>();
   const peerVs = rankedVs.filter((score) => peerNames.has(score.playerName));
-  const peerTargetVs = peerVs.length ? peerVs[Math.floor((peerVs.length - 1) / 2)].points : allianceMedianVs;
+  const peerTargetVs = peerVs.length
+    ? peerVs[Math.floor((peerVs.length - 1) / 2)].points
+    : allianceMedianVs;
   const vsGap = myVs ? Math.max(0, peerTargetVs - myVs.points) : 0;
-  const vsPercentile = myVs && vsScores.length > 1 ? Math.round((vsScores.length - myVs.rank) / (vsScores.length - 1) * 100) : 0;
-  const myArena = player ? arena.find((item) => item.playerName.replaceAll('  ',' ') === player.playerName.replaceAll('  ',' ')) : undefined;
-  const myHeroPower = player ? heroPower.find((item) => item.playerName === player.playerName) : undefined;
-  const completedVsDays = myVs?.daily.filter((points) => points != null).length ?? 0;
-  const scoredVsDays = myVs?.daily.filter((points) => (points ?? 0) > 0).length ?? 0;
-  const averageVsDay = scoredVsDays && myVs ? Math.round(myVs.points / scoredVsDays) : 0;
-  const readiness = player ? Math.round(Math.min(100, (myVs ? Math.min(40, vsPercentile * .4) : 0) + (myArena ? Math.min(30, myArena.score / 50) : 0) + (myHeroPower ? Math.min(30, myHeroPower.heroPower / 800000) : 0))) : 0;
+  const vsPercentile =
+    myVs && vsScores.length > 1
+      ? Math.round(
+          ((vsScores.length - myVs.rank) / (vsScores.length - 1)) * 100,
+        )
+      : 0;
+  const myArena = player
+    ? arena.find(
+        (item) =>
+          item.playerName.replaceAll("  ", " ") ===
+          player.playerName.replaceAll("  ", " "),
+      )
+    : undefined;
+  const myHeroPower = player
+    ? heroPower.find((item) => item.playerName === player.playerName)
+    : undefined;
+  const completedVsDays =
+    myVs?.daily.filter((points) => points != null).length ?? 0;
+  const scoredVsDays =
+    myVs?.daily.filter((points) => (points ?? 0) > 0).length ?? 0;
+  const averageVsDay =
+    scoredVsDays && myVs ? Math.round(myVs.points / scoredVsDays) : 0;
+  const readiness = player
+    ? Math.round(
+        Math.min(
+          100,
+          (myVs ? Math.min(40, vsPercentile * 0.4) : 0) +
+            (myArena ? Math.min(30, myArena.score / 50) : 0) +
+            (myHeroPower ? Math.min(30, myHeroPower.heroPower / 800000) : 0),
+        ),
+      )
+    : 0;
   const totalPower = players.reduce((sum, item) => sum + item.power, 0);
-  const averageLevel = players.length ? players.reduce((sum, item) => sum + (item.level ?? 0), 0) / players.length : 0;
-  const recommendations = useMemo(() => scoreItems(focus, 'free').slice(0, 8), [focus]);
+  const averageLevel = players.length
+    ? players.reduce((sum, item) => sum + (item.level ?? 0), 0) / players.length
+    : 0;
+  const recommendations = useMemo(
+    () => scoreItems(focus, "free").slice(0, 8),
+    [focus],
+  );
 
   async function analyzeReport(event: FormEvent) {
     event.preventDefault();
     if (!reportFiles.length) return;
-    setAnalyzing(true); setAnalysis('');
-    const body = new FormData(); reportFiles.forEach((file) => body.append('reports', file));
+    setAnalyzing(true);
+    setAnalysis("");
+    const body = new FormData();
+    reportFiles.forEach((file) => body.append("reports", file));
     try {
-      const response = await fetch('/api/analyze-report', { method: 'POST', body });
-      const result = await response.json() as { analysis?: string; error?: string };
-      setAnalysis(result.analysis ?? result.error ?? 'Analysis failed.');
-    } catch { setAnalysis('The analyzer could not be reached.'); }
-    finally { setAnalyzing(false); }
+      const response = await fetch("/api/analyze-report", {
+        method: "POST",
+        body,
+      });
+      const result = (await response.json()) as {
+        analysis?: string;
+        error?: string;
+      };
+      setAnalysis(result.analysis ?? result.error ?? "Analysis failed.");
+    } catch {
+      setAnalysis("The analyzer could not be reached.");
+    } finally {
+      setAnalyzing(false);
+    }
   }
 
-  async function decide(discordId: string, action: 'approve' | 'reject') {
-    const response = await fetch('/api/admin/claims', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ discordId, action }) });
-    if (response.ok) setClaims((current) => current.filter((claim) => claim.discordId !== discordId));
+  async function decide(discordId: string, action: "approve" | "reject") {
+    const response = await fetch("/api/admin/claims", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ discordId, action }),
+    });
+    if (response.ok)
+      setClaims((current) =>
+        current.filter((claim) => claim.discordId !== discordId),
+      );
   }
 
-  async function assignCommander() { setAdminMessage(''); const response=await fetch('/api/admin/claims',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({discordId:manualDiscordId,action:'assign',lwmaPlayerId:manualCommander})}); const result=await response.json() as {error?:string;playerName?:string}; if(response.ok){setAdminMessage(`${result.playerName} assigned to Discord ${manualDiscordId}.`);window.location.reload();}else setAdminMessage(result.error??'Assignment failed.'); }
-  async function unlinkCommander(discordId:string) { const response=await fetch('/api/admin/claims',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({discordId,action:'unlink'})}); if(response.ok)setMemberLinks(current=>current.map(item=>item.discordId===discordId?{...item,status:'unlinked',lwmaPlayerId:null,playerName:null}:item)); }
+  async function assignCommander() {
+    setAdminMessage("");
+    const response = await fetch("/api/admin/claims", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({
+        discordId: manualDiscordId,
+        action: "assign",
+        lwmaPlayerId: manualCommander,
+      }),
+    });
+    const result = (await response.json()) as {
+      error?: string;
+      playerName?: string;
+    };
+    if (response.ok) {
+      setAdminMessage(
+        `${result.playerName} assigned to Discord ${manualDiscordId}.`,
+      );
+      window.location.reload();
+    } else setAdminMessage(result.error ?? "Assignment failed.");
+  }
+  async function unlinkCommander(discordId: string) {
+    const response = await fetch("/api/admin/claims", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ discordId, action: "unlink" }),
+    });
+    if (response.ok)
+      setMemberLinks((current) =>
+        current.map((item) =>
+          item.discordId === discordId
+            ? {
+                ...item,
+                status: "unlinked",
+                lwmaPlayerId: null,
+                playerName: null,
+              }
+            : item,
+        ),
+      );
+  }
+  async function setObserver(discordId: string, enabled: boolean) {
+    setAdminMessage("");
+    const response = await fetch("/api/admin/claims", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({
+        discordId,
+        action: enabled ? "grant-observer" : "revoke-observer",
+      }),
+    });
+    const result = (await response.json()) as { error?: string };
+    if (response.ok) {
+      setAdminMessage(
+        enabled
+          ? `Observer access granted to Discord ${discordId}.`
+          : `Observer access revoked for Discord ${discordId}.`,
+      );
+      window.location.reload();
+    } else setAdminMessage(result.error ?? "Observer update failed.");
+  }
 
   async function linkCommander() {
     if (!selectedCommander) return;
-    setLinking(true); setLinkMessage('');
-    const response = await fetch('/api/claims', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ lwmaPlayerId: selectedCommander }) });
-    const result = await response.json() as { error?: string; playerName?: string; approved?: boolean };
-    if (!response.ok) setLinkMessage(result.error ?? 'Commander linking failed.');
-    else if (result.approved) { setLinkMessage(`${result.playerName} linked.`); window.location.reload(); }
-    else setLinkMessage(`Claim for ${result.playerName} submitted for approval.`);
+    setLinking(true);
+    setLinkMessage("");
+    const response = await fetch("/api/claims", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ lwmaPlayerId: selectedCommander }),
+    });
+    const result = (await response.json()) as {
+      error?: string;
+      playerName?: string;
+      approved?: boolean;
+    };
+    if (!response.ok)
+      setLinkMessage(result.error ?? "Commander linking failed.");
+    else if (result.approved) {
+      setLinkMessage(`${result.playerName} linked.`);
+      window.location.reload();
+    } else
+      setLinkMessage(`Claim for ${result.playerName} submitted for approval.`);
     setLinking(false);
   }
 
-  return <main className="min-h-screen bg-black/10 text-white lg:grid lg:grid-cols-[246px_1fr]">
-    <aside className="border-b border-[#35213f] bg-[#09060d]/95 p-4 backdrop-blur lg:sticky lg:top-0 lg:flex lg:h-screen lg:flex-col lg:border-b-0 lg:border-r lg:p-5">
-      <div className="flex items-center gap-3 px-2 lg:mb-7"><span className="grid h-10 w-10 place-items-center rounded-xl bg-gradient-to-br from-[#a855f7] to-[#ec4899] text-xs font-black shadow-[0_8px_24px_rgba(236,72,153,.3)]">OP</span><div><p className="font-black tracking-[.16em]">OOPZ</p><p className="text-[10px] text-[#9b7fa7]">ALLIANCE COMMAND</p></div></div>
-      <nav className="mt-4 flex gap-2 overflow-x-auto pb-2 lg:mt-0 lg:min-h-0 lg:flex-1 lg:block lg:space-y-1 lg:overflow-y-auto lg:pr-1">{nav.map(([id, icon, label]) => <button key={id} onClick={() => setTab(id)} className={`flex shrink-0 items-center gap-3 rounded-xl px-4 py-3 text-sm font-bold transition lg:w-full ${tab === id ? 'bg-gradient-to-r from-[#8b5cf6] to-[#d946aa] text-white shadow-[0_8px_24px_rgba(217,70,170,.18)]' : 'text-[#a28fab] hover:bg-[#1a1021] hover:text-white'}`}><span className="w-5 text-center">{icon}</span>{label}</button>)}</nav>
-      <a href="/auth/logout" className="mt-3 flex items-center justify-center gap-2 rounded-xl border border-[#392341] bg-[#130c18] px-4 py-3 text-sm font-bold text-[#b29abb] transition hover:border-[#7b3d86] hover:bg-[#1d1024] hover:text-white lg:mt-4 lg:w-full"><span aria-hidden="true">↪</span>Sign out</a>
-    </aside>
+  if (access.isObserver)
+    return (
+      <ObserverPortal
+        member={member}
+        players={players}
+        progressLeague={progressLeague}
+      />
+    );
 
-    <section className="min-w-0"><header className="flex items-center justify-between border-b border-[#222838] px-5 py-5 sm:px-8"><div><p className="text-[10px] font-bold uppercase tracking-[.16em] text-[#66718a]">Verified Discord member</p><p className="mt-1 font-black">{member.displayName}</p></div><div className="flex items-center gap-3"><span className="hidden rounded-full bg-[#14261f] px-3 py-2 text-xs font-bold text-[#66efb1] sm:block">● OOPZ online</span>{member.avatar ? <img className="h-10 w-10 rounded-full" alt="Discord avatar" src={`https://cdn.discordapp.com/avatars/${member.discordId}/${member.avatar}.png?size=80`} /> : <span className="grid h-10 w-10 place-items-center rounded-full bg-[#7c5cff] font-black">{member.displayName.slice(0,2).toUpperCase()}</span>}</div></header>
+  return (
+    <main className="min-h-screen bg-black/10 text-white lg:grid lg:grid-cols-[246px_1fr]">
+      <aside className="border-b border-[#35213f] bg-[#09060d]/95 p-4 backdrop-blur lg:sticky lg:top-0 lg:flex lg:h-screen lg:flex-col lg:border-b-0 lg:border-r lg:p-5">
+        <div className="flex items-center gap-3 px-2 lg:mb-7">
+          <span className="grid h-10 w-10 place-items-center rounded-xl bg-gradient-to-br from-[#a855f7] to-[#ec4899] text-xs font-black shadow-[0_8px_24px_rgba(236,72,153,.3)]">
+            OP
+          </span>
+          <div>
+            <p className="font-black tracking-[.16em]">OOPZ</p>
+            <p className="text-[10px] text-[#9b7fa7]">ALLIANCE COMMAND</p>
+          </div>
+        </div>
+        <nav className="mt-4 flex gap-2 overflow-x-auto pb-2 lg:mt-0 lg:min-h-0 lg:flex-1 lg:block lg:space-y-1 lg:overflow-y-auto lg:pr-1">
+          {nav.map(([id, icon, label]) => (
+            <button
+              key={id}
+              onClick={() => setTab(id)}
+              className={`flex shrink-0 items-center gap-3 rounded-xl px-4 py-3 text-sm font-bold transition lg:w-full ${tab === id ? "bg-gradient-to-r from-[#8b5cf6] to-[#d946aa] text-white shadow-[0_8px_24px_rgba(217,70,170,.18)]" : "text-[#a28fab] hover:bg-[#1a1021] hover:text-white"}`}
+            >
+              <span className="w-5 text-center">{icon}</span>
+              {label}
+            </button>
+          ))}
+        </nav>
+        <a
+          href="/auth/logout"
+          className="mt-3 flex items-center justify-center gap-2 rounded-xl border border-[#392341] bg-[#130c18] px-4 py-3 text-sm font-bold text-[#b29abb] transition hover:border-[#7b3d86] hover:bg-[#1d1024] hover:text-white lg:mt-4 lg:w-full"
+        >
+          <span aria-hidden="true">↪</span>Sign out
+        </a>
+      </aside>
+
+      <section className="min-w-0">
+        <header className="flex items-center justify-between border-b border-[#222838] px-5 py-5 sm:px-8">
+          <div>
+            <p className="text-[10px] font-bold uppercase tracking-[.16em] text-[#66718a]">
+              Verified Discord member
+            </p>
+            <p className="mt-1 font-black">{member.displayName}</p>
+          </div>
+          <div className="flex items-center gap-3">
+            <span className="hidden rounded-full bg-[#14261f] px-3 py-2 text-xs font-bold text-[#66efb1] sm:block">
+              ● OOPZ online
+            </span>
+            {member.avatar ? (
+              <img
+                className="h-10 w-10 rounded-full"
+                alt="Discord avatar"
+                src={`https://cdn.discordapp.com/avatars/${member.discordId}/${member.avatar}.png?size=80`}
+              />
+            ) : (
+              <span className="grid h-10 w-10 place-items-center rounded-full bg-[#7c5cff] font-black">
+                {member.displayName.slice(0, 2).toUpperCase()}
+              </span>
+            )}
+          </div>
+        </header>
+        <div className="mx-auto max-w-6xl px-5 py-8 sm:px-8">
+          <p className="mb-6 rounded-xl border border-[#314436] bg-[#122019] px-4 py-3 text-xs text-[#85dcae]">
+            {players.length
+              ? `${players.length} LWMA alliance records connected.`
+              : "The LWMA roster has not been imported yet."}
+            {access.isAdmin && !player
+              ? " Admin access is active; link your commander when ready."
+              : ""}
+          </p>
+
+          {tab === "personal" && (
+            <>
+              <CommanderHome
+                name={player?.playerName ?? member.displayName}
+                power={compact(player?.power)}
+                powerRank={
+                  player
+                    ? players.findIndex(
+                        (item) => item.lwmaPlayerId === player.lwmaPlayerId,
+                      ) + 1
+                    : null
+                }
+                vs={compact(myVs?.points)}
+                vsNote={
+                  myVs
+                    ? `#${myVs.rank} · ${vsPercentile}th percentile`
+                    : "No score captured"
+                }
+                progress={progress}
+                onOpen={setTab}
+              />
+              <div className="mt-6 grid gap-5 xl:grid-cols-[1.3fr_.7fr]">
+                <article className="rounded-3xl border border-[#252c3d] bg-[#0f1420] p-6">
+                  <p className="text-xs font-black tracking-[.15em] text-[#68728b]">
+                    IDENTITY STATUS
+                  </p>
+                  <p className="mt-5 text-lg font-black">
+                    {player
+                      ? "Verified one-to-one commander link"
+                      : "Choose your in-game commander"}
+                  </p>
+                  <p className="mt-2 text-sm leading-6 text-[#7e889f]">
+                    Discord membership is checked at every login. Regular member
+                    claims require administrator approval.
+                  </p>
+                  {!player && (
+                    <div className="mt-5">
+                      <select
+                        aria-label="In-game commander"
+                        value={selectedCommander}
+                        onChange={(event) =>
+                          setSelectedCommander(event.target.value)
+                        }
+                        className="w-full rounded-xl border border-[#343c4f] bg-[#151b28] px-4 py-3 text-white"
+                      >
+                        <option value="">Select your commander…</option>
+                        {players.map((item) => (
+                          <option
+                            key={item.lwmaPlayerId}
+                            value={item.lwmaPlayerId}
+                          >
+                            {item.playerName} · HQ {item.level ?? "?"} ·{" "}
+                            {(item.power / 1_000_000).toFixed(1)}M
+                          </option>
+                        ))}
+                      </select>
+                      <button
+                        onClick={linkCommander}
+                        disabled={!selectedCommander || linking}
+                        className="mt-3 w-full rounded-xl bg-[#7c5cff] px-4 py-3 text-sm font-black disabled:opacity-40"
+                      >
+                        {linking
+                          ? "Linking…"
+                          : access.isAdmin
+                            ? "Link my commander"
+                            : "Request verification"}
+                      </button>
+                      {linkMessage && (
+                        <p className="mt-3 text-sm text-[#e2c477]">
+                          {linkMessage}
+                        </p>
+                      )}
+                    </div>
+                  )}
+                </article>
+                <article className="rounded-3xl bg-gradient-to-br from-[#7c5cff] to-[#4b62d8] p-6">
+                  <p className="text-xs font-black tracking-[.15em] opacity-70">
+                    NEXT STEP
+                  </p>
+                  <p className="mt-7 text-2xl font-black leading-tight">
+                    Use account data to guide impact—not empty power.
+                  </p>
+                  <button
+                    onClick={() => setTab("purchases")}
+                    className="mt-8 rounded-xl bg-white/15 px-4 py-3 text-sm font-black hover:bg-white/25"
+                  >
+                    Check purchases →
+                  </button>
+                </article>
+              </div>
+            </>
+          )}
+
+          {tab === "alliance" && (
+            <>
+              <p className="text-sm font-black text-[#8d75ff]">
+                ALLIANCE OVERVIEW
+              </p>
+              <h1 className="mt-2 text-4xl font-black tracking-[-.04em]">
+                One team, one direction.
+              </h1>
+              <div className="mt-8 grid gap-3 sm:grid-cols-2 xl:grid-cols-4">
+                <Stat
+                  label="Total power"
+                  value={compact(totalPower)}
+                  note="Current LWMA capture"
+                />
+                <Stat
+                  label="Roster"
+                  value={String(players.length)}
+                  note="Captured alliance members"
+                />
+                <Stat
+                  label="Average HQ"
+                  value={averageLevel.toFixed(1)}
+                  note="Across current roster"
+                />
+                <Stat
+                  label="Weekly donations"
+                  value={compact(
+                    players.reduce(
+                      (sum, item) => sum + (item.weeklyDonations ?? 0),
+                      0,
+                    ),
+                  )}
+                  note="Alliance total"
+                />
+              </div>
+              <div className="mt-6 rounded-3xl border border-[#252c3d] bg-[#0f1420] p-6">
+                <div className="flex items-center justify-between">
+                  <h2 className="text-xl font-black">Data coverage</h2>
+                  <span className="text-xs font-bold text-[#66efb1]">
+                    LWMA rendered output
+                  </span>
+                </div>
+                <p className="mt-5 text-sm leading-7 text-[#8d97ae]">
+                  Power, headquarters level, alliance rank, kills and donations
+                  are stored inside the OOPZ database. AMP calculation datasets
+                  remain local to this project and are used for guidance.
+                </p>
+              </div>
+            </>
+          )}
+
+          {tab === "alliance" && (
+            <div className="mt-6 grid gap-5 xl:grid-cols-[.8fr_1.2fr]">
+              <section className="rounded-3xl border border-[#3d2748] bg-[#100b15] p-6">
+                <p className="text-xs font-black tracking-[.15em] text-[#ff6ed1]">
+                  T1 TROOP DISTRIBUTION
+                </p>
+                <div className="mt-5 space-y-5">
+                  {(["Tank", "Air", "Missile"] as const).map((focus) => {
+                    const count = focusCounts[focus],
+                      percent = focusTotal
+                        ? Math.round((count / focusTotal) * 100)
+                        : 0;
+                    return (
+                      <div key={focus}>
+                        <div className="flex justify-between text-sm">
+                          <strong>{focus}</strong>
+                          <span className="text-[#c8b5cf]">
+                            {percent}% · {count} commanders
+                          </span>
+                        </div>
+                        <div className="mt-2 h-3 overflow-hidden rounded-full bg-[#28172e]">
+                          <div
+                            className="h-full rounded-full bg-gradient-to-r from-[#8b5cf6] to-[#ec4899]"
+                            style={{ width: `${percent}%` }}
+                          />
+                        </div>
+                      </div>
+                    );
+                  })}
+                </div>
+                <p className="mt-5 text-xs leading-5 text-[#8f7e98]">
+                  Based on commanders who selected a T1 focus in OOPZ.
+                </p>
+              </section>
+              <section className="rounded-3xl border border-[#3d2748] bg-[#100b15] p-6">
+                <div className="flex items-end justify-between">
+                  <div>
+                    <p className="text-xs font-black tracking-[.15em] text-[#ff6ed1]">
+                      T10 READINESS
+                    </p>
+                    <h2 className="mt-2 text-xl font-black">
+                      Five commanders closest to T10
+                    </h2>
+                  </div>
+                  <span className="text-xs text-[#8f7e98]">
+                    Saved profiles only
+                  </span>
+                </div>
+                <div className="mt-5 space-y-2">
+                  {closestT10.map((row, index) => (
+                    <div
+                      key={row.playerName}
+                      className="grid grid-cols-[auto_1fr_auto] items-center gap-3 rounded-xl bg-[#1a1020] p-3"
+                    >
+                      <span className="grid h-8 w-8 place-items-center rounded-lg bg-[#35203f] text-xs font-black text-[#ff72d3]">
+                        {index + 1}
+                      </span>
+                      <div>
+                        <p className="font-black">{row.playerName}</p>
+                        <p className="text-[11px] text-[#95849e]">
+                          {row.vehicleCenter} · HQ {row.hqLevel} ·{" "}
+                          {row.techRemaining} research + {row.buildingRemaining}{" "}
+                          building levels
+                        </p>
+                      </div>
+                      <strong className="text-sm text-[#d891e2]">
+                        {row.totalRemaining} left
+                      </strong>
+                    </div>
+                  ))}
+                  {!closestT10.length && (
+                    <p className="rounded-xl bg-[#1a1020] p-5 text-sm text-[#95849e]">
+                      No saved growth profiles yet.
+                    </p>
+                  )}
+                </div>
+              </section>
+            </div>
+          )}
+          {tab === "compare" && (
+            <>
+              <p className="text-sm font-black text-[#8d75ff]">
+                ALLIANCE COMPARISON
+              </p>
+              <h1 className="mt-2 text-4xl font-black tracking-[-.04em]">
+                See your position—not just your rank.
+              </h1>
+              <p className="mt-3 text-[#8690a7]">
+                Current power, headquarters, kills and weekly donations from the
+                latest LWMA roster capture.
+              </p>
+              <div className="mt-8 max-h-[650px] overflow-auto rounded-3xl border border-[#252c3d] bg-[#0f1420]">
+                <table className="w-full min-w-[650px] text-left">
+                  <thead className="sticky top-0 border-b border-[#252c3d] bg-[#0f1420] text-[11px] uppercase tracking-[.13em] text-[#68728b]">
+                    <tr>
+                      <th className="p-5">Member</th>
+                      <th>Power</th>
+                      <th>HQ</th>
+                      <th>Kills</th>
+                      <th>Weekly donations</th>
+                    </tr>
+                  </thead>
+                  <tbody>
+                    {players.map((item, index) => (
+                      <tr
+                        key={item.lwmaPlayerId}
+                        className={`border-b border-[#1e2432] last:border-0 ${player?.lwmaPlayerId === item.lwmaPlayerId ? "bg-[#7c5cff]/10" : ""}`}
+                      >
+                        <td className="p-5 font-black">
+                          <span className="mr-3 text-[#647087]">
+                            #{index + 1}
+                          </span>
+                          {item.playerName}
+                        </td>
+                        <td>{compact(item.power)}</td>
+                        <td>{item.level ?? "—"}</td>
+                        <td>{compact(item.kills)}</td>
+                        <td>{compact(item.weeklyDonations)}</td>
+                      </tr>
+                    ))}
+                  </tbody>
+                </table>
+              </div>
+            </>
+          )}
+
+          {tab === "deepdive" && (
+            <>
+              <p className="text-sm font-black text-[#8d75ff]">
+                COMMANDER DEEP DIVE
+              </p>
+              <h1 className="mt-2 text-4xl font-black tracking-[-.04em]">
+                Turn every number into a next move.
+              </h1>
+              <p className="mt-3 text-[#8690a7]">
+                A combined view of weekly participation, VS impact, arena
+                performance, hero strength and account power.
+              </p>
+              <div className="mt-8 grid gap-3 sm:grid-cols-2 xl:grid-cols-4">
+                <Stat
+                  label="Readiness index"
+                  value={player ? `${readiness}/100` : "—"}
+                  note="VS, arena and hero-power blend"
+                />
+                <Stat
+                  label="Hero power"
+                  value={compact(myHeroPower?.heroPower)}
+                  note={
+                    myHeroPower
+                      ? `#${myHeroPower.serverRank} on server · OOPZ top-200`
+                      : "Not currently in server top 200"
+                  }
+                />
+                <Stat
+                  label="Storm Arena"
+                  value={myArena?.score?.toLocaleString() ?? "—"}
+                  note={
+                    myArena
+                      ? `#${myArena.serverRank} on server · squad ${compact(myArena.squadPower)}`
+                      : "No current arena capture"
+                  }
+                />
+                <Stat
+                  label="VS participation"
+                  value={myVs ? `${scoredVsDays}/${completedVsDays}` : "—"}
+                  note={
+                    averageVsDay
+                      ? `${compact(averageVsDay)} average per scored day`
+                      : "No weekly breakdown"
+                  }
+                />
+              </div>
+              <div className="mt-6 grid gap-5 xl:grid-cols-[1.1fr_.9fr]">
+                <article className="rounded-3xl border border-[#252c3d] bg-[#0f1420] p-6">
+                  <p className="text-xs font-black tracking-[.15em] text-[#68728b]">
+                    DAILY VS PACE
+                  </p>
+                  <div className="mt-5 grid grid-cols-2 gap-3 sm:grid-cols-3">
+                    {["Mon", "Tue", "Wed", "Thu", "Fri", "Sat"].map(
+                      (day, index) => (
+                        <div key={day} className="rounded-xl bg-[#151b28] p-4">
+                          <p className="text-xs font-bold text-[#6f7990]">
+                            {day}
+                          </p>
+                          <p className="mt-2 text-lg font-black">
+                            {myVs?.daily[index] == null
+                              ? "Not captured"
+                              : compact(myVs.daily[index])}
+                          </p>
+                          <p
+                            className={`mt-1 text-[11px] ${(myVs?.daily[index] ?? 0) > 0 ? "text-[#66efb1]" : "text-[#ee8ca8]"}`}
+                          >
+                            {myVs?.daily[index] == null
+                              ? "Pending day"
+                              : (myVs.daily[index] ?? 0) > 0
+                                ? "Scored"
+                                : "Missed"}
+                          </p>
+                        </div>
+                      ),
+                    )}
+                  </div>
+                </article>
+                <article className="rounded-3xl border border-[#252c3d] bg-[#0f1420] p-6">
+                  <p className="text-xs font-black tracking-[.15em] text-[#68728b]">
+                    PRIORITY ORDER
+                  </p>
+                  <ol className="mt-5 space-y-4 text-sm leading-6 text-[#c5cad8]">
+                    <li>
+                      <strong className="text-white">1. Participation:</strong>{" "}
+                      {completedVsDays && scoredVsDays < completedVsDays
+                        ? `Recover ${completedVsDays - scoredVsDays} missed VS day(s) before optimizing spend.`
+                        : "Keep the full-week scoring streak alive."}
+                    </li>
+                    <li>
+                      <strong className="text-white">2. Weekly impact:</strong>{" "}
+                      {myVs && vsGap
+                        ? `Close the ${compact(vsGap)} gap to similarly powered peers.`
+                        : "You are meeting the peer benchmark; push toward the top quartile."}
+                    </li>
+                    <li>
+                      <strong className="text-white">3. Combat quality:</strong>{" "}
+                      {myHeroPower
+                        ? `Hero power is server rank #${myHeroPower.serverRank}; prioritize march quality over empty account power.`
+                        : "Build hero power toward the server top-200 threshold."}
+                    </li>
+                    <li>
+                      <strong className="text-white">4. Proof:</strong> Upload
+                      this week's battle report for one focused AI review.
+                    </li>
+                  </ol>
+                </article>
+              </div>
+              <div className="mt-6 overflow-auto rounded-3xl border border-[#252c3d] bg-[#0f1420]">
+                <table className="w-full min-w-[760px] text-left">
+                  <thead className="border-b border-[#252c3d] text-[11px] uppercase tracking-[.13em] text-[#68728b]">
+                    <tr>
+                      <th className="p-5">Commander</th>
+                      <th>Power</th>
+                      <th>VS total</th>
+                      <th>VS rank</th>
+                      <th>Hero power</th>
+                      <th>Arena</th>
+                    </tr>
+                  </thead>
+                  <tbody>
+                    {players.slice(0, 25).map((item) => {
+                      const score = vsScores.find(
+                        (v) => v.playerName === item.playerName,
+                      );
+                      const hp = heroPower.find(
+                        (v) => v.playerName === item.playerName,
+                      );
+                      const ar = arena.find(
+                        (v) =>
+                          v.playerName.replaceAll("  ", " ") ===
+                          item.playerName.replaceAll("  ", " "),
+                      );
+                      return (
+                        <tr
+                          key={item.lwmaPlayerId}
+                          className={`border-b border-[#1e2432] last:border-0 ${player?.lwmaPlayerId === item.lwmaPlayerId ? "bg-[#7c5cff]/10" : ""}`}
+                        >
+                          <td className="p-5 font-black">{item.playerName}</td>
+                          <td>{compact(item.power)}</td>
+                          <td>{compact(score?.points)}</td>
+                          <td>{score ? `#${score.rank}` : "—"}</td>
+                          <td>{compact(hp?.heroPower)}</td>
+                          <td>
+                            {ar ? `#${ar.serverRank} · ${ar.score}` : "—"}
+                          </td>
+                        </tr>
+                      );
+                    })}
+                  </tbody>
+                </table>
+              </div>
+            </>
+          )}
+
+          {tab === "growth" && (
+            <GrowthPlanner initial={progress} league={progressLeague} />
+          )}
+          {tab === "heroes" && (
+            <HeroLab
+              initial={progress.heroProfile}
+              hqLevel={progress.hqLevel}
+              focus={progress.vehicleCenter}
+            />
+          )}
+          {tab === "drone" && (
+            <DroneLab
+              initial={progress.droneProfile}
+              focus={progress.vehicleCenter}
+            />
+          )}
+          {tab === "gear" && (
+            <GearLab
+              initial={progress.gearProfile}
+              heroProfile={progress.heroProfile}
+              focus={progress.vehicleCenter}
+            />
+          )}
+
+          {tab === "reports" && (
+            <>
+              <p className="text-sm font-black text-[#8d75ff]">AI BATTLE LAB</p>
+              <h1 className="mt-2 text-4xl font-black tracking-[-.04em]">
+                Turn a report into a plan.
+              </h1>
+              <div className="mt-8 grid gap-5 lg:grid-cols-[.8fr_1.2fr]">
+                <form
+                  onSubmit={analyzeReport}
+                  className="rounded-3xl border border-dashed border-[#3b455b] bg-[#0f1420] p-6"
+                >
+                  <label className="block text-sm font-black" htmlFor="report">
+                    Battle-report screenshots
+                  </label>
+                  <p className="mt-2 text-sm leading-6 text-[#7f899f]">
+                    Choose 1–5 PNG, JPG or WebP screenshots, up to 8 MB each and
+                    30 MB combined. All screenshots are analyzed together. Each
+                    member receives one analysis per calendar week, resetting
+                    Monday.
+                  </p>
+                  <input
+                    id="report"
+                    type="file"
+                    multiple
+                    accept="image/png,image/jpeg,image/webp"
+                    onChange={(e) =>
+                      setReportFiles(
+                        Array.from(e.target.files ?? []).slice(0, 5),
+                      )
+                    }
+                    className="mt-5 block w-full text-sm text-[#8e98ae] file:mr-4 file:rounded-lg file:border-0 file:bg-[#252d3d] file:px-4 file:py-3 file:font-bold file:text-white"
+                  />
+                  <p className="mt-3 text-xs text-[#7f899f]">
+                    {reportFiles.length
+                      ? `${reportFiles.length} screenshot${reportFiles.length === 1 ? "" : "s"} selected`
+                      : "No screenshots selected"}
+                  </p>
+                  <button
+                    disabled={!reportFiles.length || analyzing}
+                    className="mt-5 w-full rounded-xl bg-[#7c5cff] px-5 py-3 text-sm font-black disabled:cursor-not-allowed disabled:opacity-40"
+                  >
+                    {analyzing ? "Analyzing…" : "Analyze report"}
+                  </button>
+                </form>
+                <article className="min-h-72 rounded-3xl border border-[#252c3d] bg-[#0f1420] p-6">
+                  <p className="text-xs font-black tracking-[.15em] text-[#68728b]">
+                    COMMANDER BRIEFING
+                  </p>
+                  {analysis ? (
+                    <p className="mt-5 whitespace-pre-wrap text-sm leading-7 text-[#c5cad8]">
+                      {analysis}
+                    </p>
+                  ) : (
+                    <div className="mt-12 text-center">
+                      <p className="text-xl font-black">
+                        Your analysis will appear here.
+                      </p>
+                      <p className="mt-3 text-sm text-[#7f899f]">
+                        Expect matchup notes, damage gaps and prioritized
+                        upgrade advice.
+                      </p>
+                    </div>
+                  )}
+                </article>
+              </div>
+            </>
+          )}
+
+          {tab === "purchases" && (
+            <>
+              <p className="text-sm font-black text-[#8d75ff]">
+                PURCHASE ENGINE
+              </p>
+              <h1 className="mt-2 text-4xl font-black tracking-[-.04em]">
+                Buy progress, not noise.
+              </h1>
+              <div className="mt-6 flex flex-wrap gap-2">
+                {(
+                  ["Balanced", "Drone", "T10", "Hero", "VS", "PvP"] as Focus[]
+                ).map((item) => (
+                  <button
+                    key={item}
+                    onClick={() => setFocus(item)}
+                    className={`rounded-xl px-4 py-2.5 text-sm font-black ${focus === item ? "bg-[#7c5cff]" : "border border-[#30384a] text-[#8c96ac] hover:bg-[#141a27]"}`}
+                  >
+                    {item}
+                  </button>
+                ))}
+              </div>
+              <div className="mt-6 grid gap-4 md:grid-cols-2">
+                {recommendations.map((item) => (
+                  <article
+                    key={`${item.store}-${item.item}`}
+                    className="rounded-2xl border border-[#252c3d] bg-[#0f1420] p-5"
+                  >
+                    <div className="flex items-start justify-between gap-4">
+                      <div>
+                        <p className="text-[10px] font-bold uppercase tracking-[.14em] text-[#68728b]">
+                          {item.store}
+                        </p>
+                        <h2 className="mt-2 text-lg font-black">{item.item}</h2>
+                      </div>
+                      <span
+                        className={`rounded-lg px-3 py-2 text-xs font-black ${item.decision === "Buy" ? "bg-[#173025] text-[#66efb1]" : item.decision === "Consider" ? "bg-[#302819] text-[#e8c76e]" : "bg-[#2c1d23] text-[#ee8ca8]"}`}
+                      >
+                        {item.decision}
+                      </span>
+                    </div>
+                    <p className="mt-3 text-sm text-[#818ba2]">
+                      {item.qty.toLocaleString()} for{" "}
+                      {item.cost.toLocaleString()} {item.currency}
+                    </p>
+                    <p className="mt-3 text-xs leading-5 text-[#aab1c3]">
+                      {item.why}
+                    </p>
+                  </article>
+                ))}
+              </div>
+            </>
+          )}
+
+          {tab === "guides" && (
+            <>
+              <p className="text-sm font-black text-[#8d75ff]">
+                OOPZ FIELD MANUAL
+              </p>
+              <h1 className="mt-2 text-4xl font-black tracking-[-.04em]">
+                Tips that match how we play.
+              </h1>
+              <div className="mt-8 grid gap-4 md:grid-cols-2 xl:grid-cols-3">
+                {[
+                  [
+                    "VS",
+                    "Score more without spending more",
+                    "A day-by-day resource checklist.",
+                  ],
+                  [
+                    "WAR",
+                    "The 30-second rally rule",
+                    "Join faster and protect rally quality.",
+                  ],
+                  [
+                    "GROWTH",
+                    "Where your next power belongs",
+                    "Prioritize upgrades with real impact.",
+                  ],
+                  [
+                    "EVENT",
+                    "Desert Storm roles",
+                    "Opening moves, rotations and recovery.",
+                  ],
+                  [
+                    "DEFENSE",
+                    "Protect troops during buster",
+                    "Shield, reinforce and recover correctly.",
+                  ],
+                  [
+                    "ECONOMY",
+                    "Spend diamonds with intent",
+                    "High-value choices and common traps.",
+                  ],
+                ].map(([tag, title, copy]) => (
+                  <article
+                    key={title}
+                    className="rounded-3xl border border-[#252c3d] bg-[#0f1420] p-6"
+                  >
+                    <span className="rounded-md bg-[#211b42] px-2.5 py-1 text-[10px] font-black tracking-[.14em] text-[#a895ff]">
+                      {tag}
+                    </span>
+                    <h2 className="mt-6 text-xl font-black">{title}</h2>
+                    <p className="mt-3 text-sm leading-6 text-[#818ba2]">
+                      {copy}
+                    </p>
+                    <p className="mt-7 text-xs font-black text-[#8d75ff]">
+                      READ GUIDE →
+                    </p>
+                  </article>
+                ))}
+              </div>
+            </>
+          )}
+
+          {tab === "admin" && access.isAdmin && (
+            <>
+              <p className="text-sm font-black text-[#8d75ff]">
+                IDENTITY ADMIN
+              </p>
+              <h1 className="mt-2 text-4xl font-black tracking-[-.04em]">
+                Approve commander links.
+              </h1>
+              <div className="mt-8 space-y-3">
+                {claims.length ? (
+                  claims.map((claim) => (
+                    <article
+                      key={claim.discordId}
+                      className="flex flex-col gap-4 rounded-2xl border border-[#252c3d] bg-[#0f1420] p-5 sm:flex-row sm:items-center sm:justify-between"
+                    >
+                      <div>
+                        <p className="font-black">
+                          {claim.discordName} → {claim.playerName}
+                        </p>
+                        <p className="mt-1 text-xs text-[#778198]">
+                          Discord {claim.discordId}
+                        </p>
+                      </div>
+                      <div className="flex gap-2">
+                        <button
+                          onClick={() => decide(claim.discordId, "approve")}
+                          className="rounded-lg bg-[#1d6b48] px-4 py-2 text-sm font-black"
+                        >
+                          Approve
+                        </button>
+                        <button
+                          onClick={() => decide(claim.discordId, "reject")}
+                          className="rounded-lg bg-[#5c2736] px-4 py-2 text-sm font-black"
+                        >
+                          Reject
+                        </button>
+                      </div>
+                    </article>
+                  ))
+                ) : (
+                  <p className="rounded-2xl border border-[#252c3d] bg-[#0f1420] p-6 text-[#8b95aa]">
+                    No pending commander claims.
+                  </p>
+                )}
+              </div>
+            </>
+          )}
+          {tab === "admin" && access.isAdmin && (
+            <>
+              <section className="mt-8 rounded-3xl border border-[#63305c] bg-[#160d18] p-6">
+                <p className="text-xs font-black tracking-[.14em] text-[#ff72d3]">
+                  READ-ONLY ACCESS
+                </p>
+                <h2 className="mt-2 text-xl font-black">Platform observers</h2>
+                <p className="mt-2 text-sm text-[#a790ae]">
+                  Grant a Discord member a read-only platform tour without
+                  linking them to an OOPZ commander.
+                </p>
+                <div className="mt-5 flex flex-col gap-3 sm:flex-row">
+                  <input
+                    aria-label="Observer Discord user ID"
+                    placeholder="Discord user ID"
+                    value={observerDiscordId}
+                    onChange={(event) =>
+                      setObserverDiscordId(
+                        event.target.value.replace(/\D/g, ""),
+                      )
+                    }
+                    className="min-w-0 flex-1 rounded-xl border border-[#4b304d] bg-[#100a14] px-4 py-3"
+                  />
+                  <button
+                    onClick={() => setObserver(observerDiscordId, true)}
+                    disabled={!/^\d{15,22}$/.test(observerDiscordId)}
+                    className="rounded-xl bg-gradient-to-r from-[#8b5cf6] to-[#ec4899] px-6 py-3 font-black disabled:opacity-40"
+                  >
+                    Grant observer access
+                  </button>
+                </div>
+                <div className="mt-5 space-y-2">
+                  {memberLinks
+                    .filter((item) => item.role === "observer")
+                    .map((item) => (
+                      <div
+                        key={item.discordId}
+                        className="flex flex-wrap items-center justify-between gap-3 rounded-xl bg-[#211525] p-4"
+                      >
+                        <div>
+                          <p className="font-black">{item.discordName}</p>
+                          <p className="mt-1 font-mono text-xs text-[#967f9e]">
+                            {item.discordId}
+                          </p>
+                        </div>
+                        <button
+                          onClick={() => setObserver(item.discordId, false)}
+                          className="rounded-lg border border-[#75374f] px-3 py-2 text-xs font-black text-[#ff91ad]"
+                        >
+                          Revoke observer
+                        </button>
+                      </div>
+                    ))}
+                  {!memberLinks.some((item) => item.role === "observer") && (
+                    <p className="rounded-xl bg-[#211525] p-4 text-sm text-[#967f9e]">
+                      No observers have been added yet.
+                    </p>
+                  )}
+                </div>
+                {adminMessage && (
+                  <p className="mt-3 text-sm text-[#e2c477]">{adminMessage}</p>
+                )}
+              </section>
+              <section className="mt-8 rounded-3xl border border-[#252c3d] bg-[#0f1420] p-6">
+                <h2 className="text-xl font-black">
+                  Manual Discord assignment
+                </h2>
+                <p className="mt-2 text-sm text-[#7f899f]">
+                  Paste the numeric Discord user ID and choose the exact in-game
+                  commander.
+                </p>
+                <div className="mt-5 grid gap-3 md:grid-cols-[1fr_1fr_auto]">
+                  <input
+                    aria-label="Discord user ID"
+                    placeholder="Discord user ID"
+                    value={manualDiscordId}
+                    onChange={(e) =>
+                      setManualDiscordId(
+                        e.target.value
+                          .split("")
+                          .filter((char) => char >= "0" && char <= "9")
+                          .join(""),
+                      )
+                    }
+                    className="rounded-xl border border-[#30384a] bg-[#151b28] px-4 py-3"
+                  />
+                  <select
+                    aria-label="Commander to assign"
+                    value={manualCommander}
+                    onChange={(e) => setManualCommander(e.target.value)}
+                    className="rounded-xl border border-[#30384a] bg-[#151b28] px-4 py-3"
+                  >
+                    <option value="">Choose commander…</option>
+                    {players.map((item) => (
+                      <option key={item.lwmaPlayerId} value={item.lwmaPlayerId}>
+                        {item.playerName}
+                      </option>
+                    ))}
+                  </select>
+                  <button
+                    onClick={assignCommander}
+                    disabled={!manualDiscordId || !manualCommander}
+                    className="rounded-xl bg-[#7c5cff] px-5 py-3 font-black disabled:opacity-40"
+                  >
+                    Assign
+                  </button>
+                </div>
+                {adminMessage && (
+                  <p className="mt-3 text-sm text-[#e2c477]">{adminMessage}</p>
+                )}
+              </section>
+              <section className="mt-6 overflow-hidden rounded-3xl border border-[#252c3d] bg-[#0f1420]">
+                <div className="p-6">
+                  <h2 className="text-xl font-black">
+                    Discord ↔ commander directory
+                  </h2>
+                  <p className="mt-2 text-sm text-[#7f899f]">
+                    {
+                      memberLinks.filter((item) => item.status === "approved")
+                        .length
+                    }{" "}
+                    verified links · {memberLinks.length} known Discord accounts
+                  </p>
+                </div>
+                <div className="overflow-auto">
+                  <table className="w-full min-w-[720px] text-left">
+                    <thead className="border-y border-[#252c3d] text-[11px] uppercase tracking-[.12em] text-[#68728b]">
+                      <tr>
+                        <th className="p-4">Discord member</th>
+                        <th>Discord ID</th>
+                        <th>Commander</th>
+                        <th>Access</th>
+                        <th>Status</th>
+                        <th></th>
+                      </tr>
+                    </thead>
+                    <tbody>
+                      {memberLinks.map((item) => (
+                        <tr
+                          key={item.discordId}
+                          className="border-b border-[#1e2432]"
+                        >
+                          <td className="p-4 font-black">{item.discordName}</td>
+                          <td className="font-mono text-xs">
+                            {item.discordId}
+                          </td>
+                          <td>{item.playerName ?? "—"}</td>
+                          <td className="capitalize">{item.role}</td>
+                          <td>{item.status}</td>
+                          <td>
+                            {item.playerName && (
+                              <button
+                                onClick={() => unlinkCommander(item.discordId)}
+                                className="rounded-lg border border-[#5c2736] px-3 py-2 text-xs font-black text-[#ee8ca8]"
+                              >
+                                Unlink
+                              </button>
+                            )}
+                          </td>
+                        </tr>
+                      ))}
+                    </tbody>
+                  </table>
+                </div>
+              </section>
+            </>
+          )}
+        </div>
+      </section>
+    </main>
+  );
+}
+
+function ObserverPortal({
+  member,
+  players,
+  progressLeague,
+}: {
+  member: OopzSession;
+  players: PlayerRecord[];
+  progressLeague: ProgressLeagueRow[];
+}) {
+  const totalPower = players.reduce((sum, player) => sum + player.power, 0);
+  const focusCounts = { Tank: 0, Air: 0, Missile: 0 };
+  progressLeague.forEach((row) => focusCounts[row.vehicleCenter]++);
+  const features = [
+    [
+      "Growth Lab",
+      "HQ prerequisites, worker assignments, research centers, T10 path and upgrade costs.",
+    ],
+    [
+      "Hero Lab",
+      "Server-aware current and future squads, levels, stars, every skill and development order.",
+    ],
+    [
+      "Drone Lab",
+      "Reachable drone levels, component inventory, chest probabilities and Wednesday forecasts.",
+    ],
+    [
+      "Gear Lab",
+      "Role-based UR gear priorities, future-hero preparation and complete upgrade costs.",
+    ],
+    [
+      "Alliance Intelligence",
+      "Power, VS, donations, troop focus, comparisons and T10 readiness across OOPZ.",
+    ],
+    [
+      "Battle & Purchase Labs",
+      "Limited AI battle-report analysis and value-based purchase recommendations.",
+    ],
+  ];
+  return (
+    <main className="min-h-screen bg-[#08050b] text-white">
+      <header className="border-b border-[#35213f] bg-[#0d0811] px-5 py-5 sm:px-8">
+        <div className="mx-auto flex max-w-6xl items-center justify-between gap-4">
+          <div className="flex items-center gap-3">
+            <span className="grid h-11 w-11 place-items-center rounded-xl bg-gradient-to-br from-[#a855f7] to-[#ec4899] text-xs font-black">
+              OP
+            </span>
+            <div>
+              <p className="font-black tracking-[.16em]">OOPZ</p>
+              <p className="text-[10px] text-[#9b7fa7]">OBSERVER TOUR</p>
+            </div>
+          </div>
+          <a
+            href="/auth/logout"
+            className="rounded-xl border border-[#4c2a54] px-4 py-2 text-sm font-bold text-[#c2a8ca]"
+          >
+            Sign out
+          </a>
+        </div>
+      </header>
       <div className="mx-auto max-w-6xl px-5 py-8 sm:px-8">
-        <p className="mb-6 rounded-xl border border-[#314436] bg-[#122019] px-4 py-3 text-xs text-[#85dcae]">{players.length ? `${players.length} LWMA alliance records connected.` : 'The LWMA roster has not been imported yet.'}{access.isAdmin && !player ? ' Admin access is active; link your commander when ready.' : ''}</p>
-
-        {tab === 'personal' && <><CommanderHome name={player?.playerName??member.displayName} power={compact(player?.power)} powerRank={player?players.findIndex(item=>item.lwmaPlayerId===player.lwmaPlayerId)+1:null} vs={compact(myVs?.points)} vsNote={myVs?`#${myVs.rank} · ${vsPercentile}th percentile`:'No score captured'} progress={progress} onOpen={setTab}/><div className="mt-6 grid gap-5 xl:grid-cols-[1.3fr_.7fr]"><article className="rounded-3xl border border-[#252c3d] bg-[#0f1420] p-6"><p className="text-xs font-black tracking-[.15em] text-[#68728b]">IDENTITY STATUS</p><p className="mt-5 text-lg font-black">{player ? 'Verified one-to-one commander link' : 'Choose your in-game commander'}</p><p className="mt-2 text-sm leading-6 text-[#7e889f]">Discord membership is checked at every login. Regular member claims require administrator approval.</p>{!player && <div className="mt-5"><select aria-label="In-game commander" value={selectedCommander} onChange={(event) => setSelectedCommander(event.target.value)} className="w-full rounded-xl border border-[#343c4f] bg-[#151b28] px-4 py-3 text-white"><option value="">Select your commander…</option>{players.map((item) => <option key={item.lwmaPlayerId} value={item.lwmaPlayerId}>{item.playerName} · HQ {item.level ?? '?'} · {(item.power / 1_000_000).toFixed(1)}M</option>)}</select><button onClick={linkCommander} disabled={!selectedCommander || linking} className="mt-3 w-full rounded-xl bg-[#7c5cff] px-4 py-3 text-sm font-black disabled:opacity-40">{linking ? 'Linking…' : access.isAdmin ? 'Link my commander' : 'Request verification'}</button>{linkMessage && <p className="mt-3 text-sm text-[#e2c477]">{linkMessage}</p>}</div>}</article><article className="rounded-3xl bg-gradient-to-br from-[#7c5cff] to-[#4b62d8] p-6"><p className="text-xs font-black tracking-[.15em] opacity-70">NEXT STEP</p><p className="mt-7 text-2xl font-black leading-tight">Use account data to guide impact—not empty power.</p><button onClick={() => setTab('purchases')} className="mt-8 rounded-xl bg-white/15 px-4 py-3 text-sm font-black hover:bg-white/25">Check purchases →</button></article></div></>}
-
-        {tab === 'alliance' && <><p className="text-sm font-black text-[#8d75ff]">ALLIANCE OVERVIEW</p><h1 className="mt-2 text-4xl font-black tracking-[-.04em]">One team, one direction.</h1><div className="mt-8 grid gap-3 sm:grid-cols-2 xl:grid-cols-4"><Stat label="Total power" value={compact(totalPower)} note="Current LWMA capture" /><Stat label="Roster" value={String(players.length)} note="Captured alliance members" /><Stat label="Average HQ" value={averageLevel.toFixed(1)} note="Across current roster" /><Stat label="Weekly donations" value={compact(players.reduce((sum,item)=>sum+(item.weeklyDonations ?? 0),0))} note="Alliance total" /></div><div className="mt-6 rounded-3xl border border-[#252c3d] bg-[#0f1420] p-6"><div className="flex items-center justify-between"><h2 className="text-xl font-black">Data coverage</h2><span className="text-xs font-bold text-[#66efb1]">LWMA rendered output</span></div><p className="mt-5 text-sm leading-7 text-[#8d97ae]">Power, headquarters level, alliance rank, kills and donations are stored inside the OOPZ database. AMP calculation datasets remain local to this project and are used for guidance.</p></div></>}
-
-        {tab === 'alliance' && <div className="mt-6 grid gap-5 xl:grid-cols-[.8fr_1.2fr]"><section className="rounded-3xl border border-[#3d2748] bg-[#100b15] p-6"><p className="text-xs font-black tracking-[.15em] text-[#ff6ed1]">T1 TROOP DISTRIBUTION</p><div className="mt-5 space-y-5">{(['Tank','Air','Missile'] as const).map(focus=>{const count=focusCounts[focus],percent=focusTotal?Math.round(count/focusTotal*100):0;return <div key={focus}><div className="flex justify-between text-sm"><strong>{focus}</strong><span className="text-[#c8b5cf]">{percent}% · {count} commanders</span></div><div className="mt-2 h-3 overflow-hidden rounded-full bg-[#28172e]"><div className="h-full rounded-full bg-gradient-to-r from-[#8b5cf6] to-[#ec4899]" style={{width:`${percent}%`}}/></div></div>})}</div><p className="mt-5 text-xs leading-5 text-[#8f7e98]">Based on commanders who selected a T1 focus in OOPZ.</p></section><section className="rounded-3xl border border-[#3d2748] bg-[#100b15] p-6"><div className="flex items-end justify-between"><div><p className="text-xs font-black tracking-[.15em] text-[#ff6ed1]">T10 READINESS</p><h2 className="mt-2 text-xl font-black">Five commanders closest to T10</h2></div><span className="text-xs text-[#8f7e98]">Saved profiles only</span></div><div className="mt-5 space-y-2">{closestT10.map((row,index)=><div key={row.playerName} className="grid grid-cols-[auto_1fr_auto] items-center gap-3 rounded-xl bg-[#1a1020] p-3"><span className="grid h-8 w-8 place-items-center rounded-lg bg-[#35203f] text-xs font-black text-[#ff72d3]">{index+1}</span><div><p className="font-black">{row.playerName}</p><p className="text-[11px] text-[#95849e]">{row.vehicleCenter} · HQ {row.hqLevel} · {row.techRemaining} research + {row.buildingRemaining} building levels</p></div><strong className="text-sm text-[#d891e2]">{row.totalRemaining} left</strong></div>)}{!closestT10.length&&<p className="rounded-xl bg-[#1a1020] p-5 text-sm text-[#95849e]">No saved growth profiles yet.</p>}</div></section></div>}
-        {tab === 'compare' && <><p className="text-sm font-black text-[#8d75ff]">ALLIANCE COMPARISON</p><h1 className="mt-2 text-4xl font-black tracking-[-.04em]">See your position—not just your rank.</h1><p className="mt-3 text-[#8690a7]">Current power, headquarters, kills and weekly donations from the latest LWMA roster capture.</p><div className="mt-8 max-h-[650px] overflow-auto rounded-3xl border border-[#252c3d] bg-[#0f1420]"><table className="w-full min-w-[650px] text-left"><thead className="sticky top-0 border-b border-[#252c3d] bg-[#0f1420] text-[11px] uppercase tracking-[.13em] text-[#68728b]"><tr><th className="p-5">Member</th><th>Power</th><th>HQ</th><th>Kills</th><th>Weekly donations</th></tr></thead><tbody>{players.map((item,index) => <tr key={item.lwmaPlayerId} className={`border-b border-[#1e2432] last:border-0 ${player?.lwmaPlayerId === item.lwmaPlayerId ? 'bg-[#7c5cff]/10' : ''}`}><td className="p-5 font-black"><span className="mr-3 text-[#647087]">#{index+1}</span>{item.playerName}</td><td>{compact(item.power)}</td><td>{item.level ?? '—'}</td><td>{compact(item.kills)}</td><td>{compact(item.weeklyDonations)}</td></tr>)}</tbody></table></div></>}
-
-        {tab === 'deepdive' && <><p className="text-sm font-black text-[#8d75ff]">COMMANDER DEEP DIVE</p><h1 className="mt-2 text-4xl font-black tracking-[-.04em]">Turn every number into a next move.</h1><p className="mt-3 text-[#8690a7]">A combined view of weekly participation, VS impact, arena performance, hero strength and account power.</p><div className="mt-8 grid gap-3 sm:grid-cols-2 xl:grid-cols-4"><Stat label="Readiness index" value={player ? `${readiness}/100` : '—'} note="VS, arena and hero-power blend" /><Stat label="Hero power" value={compact(myHeroPower?.heroPower)} note={myHeroPower ? `#${myHeroPower.serverRank} on server · OOPZ top-200` : 'Not currently in server top 200'} /><Stat label="Storm Arena" value={myArena?.score?.toLocaleString() ?? '—'} note={myArena ? `#${myArena.serverRank} on server · squad ${compact(myArena.squadPower)}` : 'No current arena capture'} /><Stat label="VS participation" value={myVs ? `${scoredVsDays}/${completedVsDays}` : '—'} note={averageVsDay ? `${compact(averageVsDay)} average per scored day` : 'No weekly breakdown'} /></div><div className="mt-6 grid gap-5 xl:grid-cols-[1.1fr_.9fr]"><article className="rounded-3xl border border-[#252c3d] bg-[#0f1420] p-6"><p className="text-xs font-black tracking-[.15em] text-[#68728b]">DAILY VS PACE</p><div className="mt-5 grid grid-cols-2 gap-3 sm:grid-cols-3">{['Mon','Tue','Wed','Thu','Fri','Sat'].map((day,index)=><div key={day} className="rounded-xl bg-[#151b28] p-4"><p className="text-xs font-bold text-[#6f7990]">{day}</p><p className="mt-2 text-lg font-black">{myVs?.daily[index] == null ? 'Not captured' : compact(myVs.daily[index])}</p><p className={`mt-1 text-[11px] ${(myVs?.daily[index] ?? 0)>0?'text-[#66efb1]':'text-[#ee8ca8]'}`}>{myVs?.daily[index] == null ? 'Pending day' : (myVs.daily[index] ?? 0)>0 ? 'Scored' : 'Missed'}</p></div>)}</div></article><article className="rounded-3xl border border-[#252c3d] bg-[#0f1420] p-6"><p className="text-xs font-black tracking-[.15em] text-[#68728b]">PRIORITY ORDER</p><ol className="mt-5 space-y-4 text-sm leading-6 text-[#c5cad8]"><li><strong className="text-white">1. Participation:</strong> {completedVsDays && scoredVsDays<completedVsDays ? `Recover ${completedVsDays-scoredVsDays} missed VS day(s) before optimizing spend.` : 'Keep the full-week scoring streak alive.'}</li><li><strong className="text-white">2. Weekly impact:</strong> {myVs && vsGap ? `Close the ${compact(vsGap)} gap to similarly powered peers.` : 'You are meeting the peer benchmark; push toward the top quartile.'}</li><li><strong className="text-white">3. Combat quality:</strong> {myHeroPower ? `Hero power is server rank #${myHeroPower.serverRank}; prioritize march quality over empty account power.` : 'Build hero power toward the server top-200 threshold.'}</li><li><strong className="text-white">4. Proof:</strong> Upload this week's battle report for one focused AI review.</li></ol></article></div><div className="mt-6 overflow-auto rounded-3xl border border-[#252c3d] bg-[#0f1420]"><table className="w-full min-w-[760px] text-left"><thead className="border-b border-[#252c3d] text-[11px] uppercase tracking-[.13em] text-[#68728b]"><tr><th className="p-5">Commander</th><th>Power</th><th>VS total</th><th>VS rank</th><th>Hero power</th><th>Arena</th></tr></thead><tbody>{players.slice(0,25).map((item)=>{const score=vsScores.find(v=>v.playerName===item.playerName); const hp=heroPower.find(v=>v.playerName===item.playerName); const ar=arena.find(v=>v.playerName.replaceAll('  ',' ')===item.playerName.replaceAll('  ',' ')); return <tr key={item.lwmaPlayerId} className={`border-b border-[#1e2432] last:border-0 ${player?.lwmaPlayerId===item.lwmaPlayerId?'bg-[#7c5cff]/10':''}`}><td className="p-5 font-black">{item.playerName}</td><td>{compact(item.power)}</td><td>{compact(score?.points)}</td><td>{score?`#${score.rank}`:'—'}</td><td>{compact(hp?.heroPower)}</td><td>{ar?`#${ar.serverRank} · ${ar.score}`:'—'}</td></tr>})}</tbody></table></div></>}
-
-        {tab === 'growth' && <GrowthPlanner initial={progress} league={progressLeague} />}
-        {tab === 'heroes' && <HeroLab initial={progress.heroProfile} hqLevel={progress.hqLevel} focus={progress.vehicleCenter} />}
-        {tab === 'drone' && <DroneLab initial={progress.droneProfile} focus={progress.vehicleCenter} />}
-        {tab === 'gear' && <GearLab initial={progress.gearProfile} heroProfile={progress.heroProfile} focus={progress.vehicleCenter} />}
-
-        {tab === 'reports' && <><p className="text-sm font-black text-[#8d75ff]">AI BATTLE LAB</p><h1 className="mt-2 text-4xl font-black tracking-[-.04em]">Turn a report into a plan.</h1><div className="mt-8 grid gap-5 lg:grid-cols-[.8fr_1.2fr]"><form onSubmit={analyzeReport} className="rounded-3xl border border-dashed border-[#3b455b] bg-[#0f1420] p-6"><label className="block text-sm font-black" htmlFor="report">Battle-report screenshots</label><p className="mt-2 text-sm leading-6 text-[#7f899f]">Choose 1–5 PNG, JPG or WebP screenshots, up to 8 MB each and 30 MB combined. All screenshots are analyzed together. Each member receives one analysis per calendar week, resetting Monday.</p><input id="report" type="file" multiple accept="image/png,image/jpeg,image/webp" onChange={(e) => setReportFiles(Array.from(e.target.files ?? []).slice(0, 5))} className="mt-5 block w-full text-sm text-[#8e98ae] file:mr-4 file:rounded-lg file:border-0 file:bg-[#252d3d] file:px-4 file:py-3 file:font-bold file:text-white" /><p className="mt-3 text-xs text-[#7f899f]">{reportFiles.length ? `${reportFiles.length} screenshot${reportFiles.length === 1 ? '' : 's'} selected` : 'No screenshots selected'}</p><button disabled={!reportFiles.length || analyzing} className="mt-5 w-full rounded-xl bg-[#7c5cff] px-5 py-3 text-sm font-black disabled:cursor-not-allowed disabled:opacity-40">{analyzing ? 'Analyzing…' : 'Analyze report'}</button></form><article className="min-h-72 rounded-3xl border border-[#252c3d] bg-[#0f1420] p-6"><p className="text-xs font-black tracking-[.15em] text-[#68728b]">COMMANDER BRIEFING</p>{analysis ? <p className="mt-5 whitespace-pre-wrap text-sm leading-7 text-[#c5cad8]">{analysis}</p> : <div className="mt-12 text-center"><p className="text-xl font-black">Your analysis will appear here.</p><p className="mt-3 text-sm text-[#7f899f]">Expect matchup notes, damage gaps and prioritized upgrade advice.</p></div>}</article></div></>}
-
-        {tab === 'purchases' && <><p className="text-sm font-black text-[#8d75ff]">PURCHASE ENGINE</p><h1 className="mt-2 text-4xl font-black tracking-[-.04em]">Buy progress, not noise.</h1><div className="mt-6 flex flex-wrap gap-2">{(['Balanced','Drone','T10','Hero','VS','PvP'] as Focus[]).map((item) => <button key={item} onClick={() => setFocus(item)} className={`rounded-xl px-4 py-2.5 text-sm font-black ${focus===item?'bg-[#7c5cff]':'border border-[#30384a] text-[#8c96ac] hover:bg-[#141a27]'}`}>{item}</button>)}</div><div className="mt-6 grid gap-4 md:grid-cols-2">{recommendations.map((item) => <article key={`${item.store}-${item.item}`} className="rounded-2xl border border-[#252c3d] bg-[#0f1420] p-5"><div className="flex items-start justify-between gap-4"><div><p className="text-[10px] font-bold uppercase tracking-[.14em] text-[#68728b]">{item.store}</p><h2 className="mt-2 text-lg font-black">{item.item}</h2></div><span className={`rounded-lg px-3 py-2 text-xs font-black ${item.decision==='Buy'?'bg-[#173025] text-[#66efb1]':item.decision==='Consider'?'bg-[#302819] text-[#e8c76e]':'bg-[#2c1d23] text-[#ee8ca8]'}`}>{item.decision}</span></div><p className="mt-3 text-sm text-[#818ba2]">{item.qty.toLocaleString()} for {item.cost.toLocaleString()} {item.currency}</p><p className="mt-3 text-xs leading-5 text-[#aab1c3]">{item.why}</p></article>)}</div></>}
-
-        {tab === 'guides' && <><p className="text-sm font-black text-[#8d75ff]">OOPZ FIELD MANUAL</p><h1 className="mt-2 text-4xl font-black tracking-[-.04em]">Tips that match how we play.</h1><div className="mt-8 grid gap-4 md:grid-cols-2 xl:grid-cols-3">{[['VS','Score more without spending more','A day-by-day resource checklist.'],['WAR','The 30-second rally rule','Join faster and protect rally quality.'],['GROWTH','Where your next power belongs','Prioritize upgrades with real impact.'],['EVENT','Desert Storm roles','Opening moves, rotations and recovery.'],['DEFENSE','Protect troops during buster','Shield, reinforce and recover correctly.'],['ECONOMY','Spend diamonds with intent','High-value choices and common traps.']].map(([tag,title,copy]) => <article key={title} className="rounded-3xl border border-[#252c3d] bg-[#0f1420] p-6"><span className="rounded-md bg-[#211b42] px-2.5 py-1 text-[10px] font-black tracking-[.14em] text-[#a895ff]">{tag}</span><h2 className="mt-6 text-xl font-black">{title}</h2><p className="mt-3 text-sm leading-6 text-[#818ba2]">{copy}</p><p className="mt-7 text-xs font-black text-[#8d75ff]">READ GUIDE →</p></article>)}</div></>}
-
-        {tab === 'admin' && access.isAdmin && <><p className="text-sm font-black text-[#8d75ff]">IDENTITY ADMIN</p><h1 className="mt-2 text-4xl font-black tracking-[-.04em]">Approve commander links.</h1><div className="mt-8 space-y-3">{claims.length ? claims.map((claim) => <article key={claim.discordId} className="flex flex-col gap-4 rounded-2xl border border-[#252c3d] bg-[#0f1420] p-5 sm:flex-row sm:items-center sm:justify-between"><div><p className="font-black">{claim.discordName} → {claim.playerName}</p><p className="mt-1 text-xs text-[#778198]">Discord {claim.discordId}</p></div><div className="flex gap-2"><button onClick={() => decide(claim.discordId,'approve')} className="rounded-lg bg-[#1d6b48] px-4 py-2 text-sm font-black">Approve</button><button onClick={() => decide(claim.discordId,'reject')} className="rounded-lg bg-[#5c2736] px-4 py-2 text-sm font-black">Reject</button></div></article>) : <p className="rounded-2xl border border-[#252c3d] bg-[#0f1420] p-6 text-[#8b95aa]">No pending commander claims.</p>}</div></>}
-        {tab === 'admin' && access.isAdmin && <><section className="mt-8 rounded-3xl border border-[#252c3d] bg-[#0f1420] p-6"><h2 className="text-xl font-black">Manual Discord assignment</h2><p className="mt-2 text-sm text-[#7f899f]">Paste the numeric Discord user ID and choose the exact in-game commander.</p><div className="mt-5 grid gap-3 md:grid-cols-[1fr_1fr_auto]"><input aria-label="Discord user ID" placeholder="Discord user ID" value={manualDiscordId} onChange={e=>setManualDiscordId(e.target.value.split('').filter(char=>char>='0'&&char<='9').join(''))} className="rounded-xl border border-[#30384a] bg-[#151b28] px-4 py-3"/><select aria-label="Commander to assign" value={manualCommander} onChange={e=>setManualCommander(e.target.value)} className="rounded-xl border border-[#30384a] bg-[#151b28] px-4 py-3"><option value="">Choose commander…</option>{players.map(item=><option key={item.lwmaPlayerId} value={item.lwmaPlayerId}>{item.playerName}</option>)}</select><button onClick={assignCommander} disabled={!manualDiscordId||!manualCommander} className="rounded-xl bg-[#7c5cff] px-5 py-3 font-black disabled:opacity-40">Assign</button></div>{adminMessage&&<p className="mt-3 text-sm text-[#e2c477]">{adminMessage}</p>}</section><section className="mt-6 overflow-hidden rounded-3xl border border-[#252c3d] bg-[#0f1420]"><div className="p-6"><h2 className="text-xl font-black">Discord ↔ commander directory</h2><p className="mt-2 text-sm text-[#7f899f]">{memberLinks.filter(item=>item.status==='approved').length} verified links · {memberLinks.length} known Discord accounts</p></div><div className="overflow-auto"><table className="w-full min-w-[720px] text-left"><thead className="border-y border-[#252c3d] text-[11px] uppercase tracking-[.12em] text-[#68728b]"><tr><th className="p-4">Discord member</th><th>Discord ID</th><th>Commander</th><th>Status</th><th></th></tr></thead><tbody>{memberLinks.map(item=><tr key={item.discordId} className="border-b border-[#1e2432]"><td className="p-4 font-black">{item.discordName}</td><td className="font-mono text-xs">{item.discordId}</td><td>{item.playerName??'—'}</td><td>{item.status}</td><td>{item.playerName&&<button onClick={()=>unlinkCommander(item.discordId)} className="rounded-lg border border-[#5c2736] px-3 py-2 text-xs font-black text-[#ee8ca8]">Unlink</button>}</td></tr>)}</tbody></table></div></section></>}
+        <section className="rounded-[2rem] border border-[#6b3270] bg-gradient-to-br from-[#1d1027] via-[#130b1b] to-[#2a1024] p-7 sm:p-10">
+          <div className="inline-flex rounded-full border border-[#795082] bg-black/25 px-3 py-2 text-[10px] font-black tracking-[.14em] text-[#ff82da]">
+            READ-ONLY OBSERVER
+          </div>
+          <h1 className="mt-5 max-w-3xl text-4xl font-black tracking-[-.05em] sm:text-5xl">
+            Welcome, {member.displayName}. Here is what OOPZ Command has become.
+          </h1>
+          <p className="mt-4 max-w-3xl text-sm leading-7 text-[#c0aac7]">
+            This tour shows the platform structure and alliance-level results.
+            You are not linked to a commander and cannot change, claim, import
+            or submit any data.
+          </p>
+        </section>
+        <section className="mt-6 grid gap-3 sm:grid-cols-2 lg:grid-cols-4">
+          <Stat
+            label="Alliance roster"
+            value={String(players.length)}
+            note="Current imported commanders"
+          />
+          <Stat
+            label="Combined power"
+            value={compact(totalPower)}
+            note="Current LWMA-derived capture"
+          />
+          <Stat
+            label="Saved profiles"
+            value={String(progressLeague.length)}
+            note="Commanders using growth tools"
+          />
+          <Stat
+            label="Access"
+            value="Read only"
+            note="No commander identity required"
+          />
+        </section>
+        <section className="mt-8">
+          <p className="text-xs font-black tracking-[.16em] text-[#ff72d3]">
+            PLATFORM OVERVIEW
+          </p>
+          <div className="mt-4 grid gap-4 md:grid-cols-2 xl:grid-cols-3">
+            {features.map(([title, description], index) => (
+              <article
+                key={title}
+                className="rounded-2xl border border-[#392641] bg-[#100b15] p-5"
+              >
+                <span className="grid h-9 w-9 place-items-center rounded-lg bg-[#2b1832] text-xs font-black text-[#ff72d3]">
+                  {index + 1}
+                </span>
+                <h2 className="mt-4 text-xl font-black">{title}</h2>
+                <p className="mt-2 text-sm leading-6 text-[#9f8da7]">
+                  {description}
+                </p>
+              </article>
+            ))}
+          </div>
+        </section>
+        <section className="mt-8 rounded-3xl border border-[#392641] bg-[#100b15] p-6">
+          <div className="flex flex-wrap items-end justify-between gap-4">
+            <div>
+              <p className="text-xs font-black tracking-[.14em] text-[#ff72d3]">
+                T1 ADOPTION SNAPSHOT
+              </p>
+              <h2 className="mt-2 text-2xl font-black">
+                How commanders are focusing their accounts
+              </h2>
+            </div>
+            <span className="text-xs text-[#8f7e98]">Saved profiles only</span>
+          </div>
+          <div className="mt-5 grid gap-3 sm:grid-cols-3">
+            {(["Tank", "Air", "Missile"] as const).map((focus) => (
+              <div key={focus} className="rounded-xl bg-[#1b1222] p-4">
+                <p className="text-sm font-black">{focus}</p>
+                <p className="mt-2 text-3xl font-black text-[#ff75d5]">
+                  {focusCounts[focus]}
+                </p>
+                <p className="mt-1 text-xs text-[#918099]">commanders</p>
+              </div>
+            ))}
+          </div>
+        </section>
       </div>
-    </section>
-  </main>;
+    </main>
+  );
 }
