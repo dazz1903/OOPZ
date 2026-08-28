@@ -5,6 +5,7 @@ import type { OopzSession } from "@/lib/session";
 import type {
   ArenaRecord,
   HeroPowerRecord,
+  GrowthHistoryRecord,
   MemberAccess,
   PlayerRecord,
   VsScoreRecord,
@@ -113,6 +114,7 @@ export function Portal({
   progressLeague,
   pendingClaims,
   linkedMembers,
+  growthHistory,
 }: {
   member: OopzSession;
   access: MemberAccess;
@@ -124,6 +126,7 @@ export function Portal({
   progressLeague: ProgressLeagueRow[];
   pendingClaims: Claim[];
   linkedMembers: LinkedMember[];
+  growthHistory: GrowthHistoryRecord[];
 }) {
   const [tab, setTab] = useState<Tab>("personal");
   const [focus, setFocus] = useState<Focus>("Balanced");
@@ -667,6 +670,11 @@ export function Portal({
                 Current power, headquarters, kills and weekly donations from the
                 latest LWMA roster capture.
               </p>
+              <GrowthChart
+                players={players}
+                history={growthHistory}
+                initialPlayerId={player?.lwmaPlayerId}
+              />
               <div className="mt-8 max-h-[650px] overflow-auto rounded-3xl border border-[#252c3d] bg-[#0f1420]">
                 <table className="w-full min-w-[650px] text-left">
                   <thead className="sticky top-0 border-b border-[#252c3d] bg-[#0f1420] text-[11px] uppercase tracking-[.13em] text-[#68728b]">
@@ -1424,5 +1432,122 @@ function ObserverPortal({
         </section>
       </div>
     </main>
+  );
+}
+
+function GrowthChart({
+  players,
+  history,
+  initialPlayerId,
+}: {
+  players: PlayerRecord[];
+  history: GrowthHistoryRecord[];
+  initialPlayerId?: string;
+}) {
+  const [selected, setSelected] = useState(
+    initialPlayerId ?? players[0]?.lwmaPlayerId ?? "",
+  );
+  const [metric, setMetric] = useState<
+    "power" | "level" | "kills" | "weeklyDonations"
+  >("power");
+  const points = history
+    .filter((item) => item.lwmaPlayerId === selected)
+    .sort((a, b) => a.captureDate.localeCompare(b.captureDate));
+  const values = points.map((point) => Number(point[metric] ?? 0));
+  const max = Math.max(1, ...values),
+    min = Math.min(...values);
+  const first = values[0] ?? 0,
+    last = values.at(-1) ?? 0,
+    change = last - first;
+  const labels = {
+    power: "Power",
+    level: "HQ level",
+    kills: "Kills",
+    weeklyDonations: "Weekly donations",
+  };
+  return (
+    <section className="mt-7 rounded-3xl border border-[#5c2b68] bg-[#100b15] p-5 sm:p-6">
+      <div className="flex flex-col gap-4 lg:flex-row lg:items-end lg:justify-between">
+        <div>
+          <p className="text-xs font-black tracking-[.14em] text-[#ff72d3]">
+            INDIVIDUAL GROWTH
+          </p>
+          <h2 className="mt-2 text-2xl font-black">Commander timeline</h2>
+        </div>
+        <select
+          aria-label="Commander growth profile"
+          value={selected}
+          onChange={(event) => setSelected(event.target.value)}
+          className="min-w-64 rounded-xl border border-[#53315d] bg-[#1b1121] px-4 py-3 font-black text-white"
+        >
+          {players.map((item) => (
+            <option key={item.lwmaPlayerId} value={item.lwmaPlayerId}>
+              {item.playerName}
+            </option>
+          ))}
+        </select>
+      </div>
+      <div className="mt-5 grid grid-cols-2 gap-2 sm:grid-cols-4">
+        {(Object.keys(labels) as Array<keyof typeof labels>).map((key) => (
+          <button
+            key={key}
+            onClick={() => setMetric(key)}
+            className={`rounded-xl px-3 py-3 text-xs font-black ${metric === key ? "bg-gradient-to-r from-[#8b5cf6] to-[#ec4899]" : "bg-[#211529] text-[#a58dad]"}`}
+          >
+            {labels[key]}
+          </button>
+        ))}
+      </div>
+      {points.length > 1 ? (
+        <>
+          <div className="mt-5 flex flex-wrap gap-5 rounded-xl bg-[#1b1222] p-4 text-sm">
+            <span>
+              <b className="text-white">{points.length}</b> captures
+            </span>
+            <span>
+              <b className={change >= 0 ? "text-[#66efb1]" : "text-[#ff8ca8]"}>
+                {change >= 0 ? "+" : ""}
+                {compact(change)}
+              </b>{" "}
+              total change
+            </span>
+            <span className="text-[#9d8ba5]">
+              {points[0].captureDate} → {points.at(-1)?.captureDate}
+            </span>
+          </div>
+          <div className="mt-5 overflow-x-auto">
+            <div className="flex h-64 min-w-[720px] items-end gap-1 rounded-2xl border border-[#31203a] bg-[#0b0810] px-4 pb-9 pt-4">
+              {points.map((point, index) => {
+                const value = values[index],
+                  height =
+                    max === min ? 70 : 15 + ((value - min) / (max - min)) * 80;
+                return (
+                  <div
+                    key={point.captureDate}
+                    title={`${point.captureDate}: ${value.toLocaleString()}`}
+                    className="group relative flex h-full min-w-2 flex-1 items-end"
+                  >
+                    <div
+                      className="w-full rounded-t bg-gradient-to-t from-[#8b5cf6] to-[#ff4fc8] transition group-hover:brightness-125"
+                      style={{ height: `${height}%` }}
+                    />
+                    <span
+                      className={`absolute -bottom-6 whitespace-nowrap text-[9px] text-[#88758f] ${index === points.length - 1 ? "right-0" : index === 0 ? "left-0" : "hidden"}`}
+                    >
+                      {point.captureDate.slice(5)}
+                    </span>
+                  </div>
+                );
+              })}
+            </div>
+          </div>
+        </>
+      ) : (
+        <div className="mt-5 rounded-xl bg-[#1b1222] p-6 text-sm text-[#9d8ba5]">
+          Historical captures are being added for this commander. The chart
+          needs at least two dates.
+        </div>
+      )}
+    </section>
   );
 }

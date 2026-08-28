@@ -7,6 +7,7 @@ import {
   listCurrentHeroPower,
   listCurrentVsScores,
   listPlayers,
+  listGrowthHistory,
   syncMember,
 } from "@/lib/member-access";
 import { Portal } from "./portal";
@@ -19,7 +20,7 @@ export default async function PortalPage() {
   const session = await getSession();
   if (!session) redirect("/");
   await syncMember(session);
-  const [access, players, vsScores, arena, heroPower, progress] =
+  const [access, players, vsScores, arena, heroPower, progress, growthHistory] =
     await Promise.all([
       getMemberAccess(session.discordId),
       listPlayers(),
@@ -27,6 +28,7 @@ export default async function PortalPage() {
       listCurrentArena(),
       listCurrentHeroPower(),
       getCommanderProgress(session.discordId),
+      listGrowthHistory(),
     ]);
   if (!access.isAdmin && !access.isObserver && access.status !== "approved")
     return (
@@ -100,6 +102,7 @@ export default async function PortalPage() {
       progressLeague={progressLeague}
       pendingClaims={pendingClaims}
       linkedMembers={linkedMembers}
+      growthHistory={growthHistory}
     />
   );
 }

@@ -39,6 +39,16 @@ export type HeroPowerRecord = {
   heroPower: number;
   serverRank: number;
 };
+export type GrowthHistoryRecord = {
+  lwmaPlayerId: string;
+  captureDate: string;
+  power: number;
+  level: number | null;
+  allianceRank: string | null;
+  kills: number | null;
+  todayDonations: number | null;
+  weeklyDonations: number | null;
+};
 
 export function configuredAdmin(discordId: string) {
   return (process.env.DISCORD_ADMIN_USER_IDS ?? "")
@@ -185,4 +195,22 @@ export async function listCurrentHeroPower() {
     heroPower: Number(row.hero_power),
     serverRank: Number(row.server_rank),
   })) satisfies HeroPowerRecord[];
+}
+
+export async function listGrowthHistory() {
+  const result = await env.DB.prepare(
+    "SELECT lwma_player_id,capture_date,power,level,alliance_rank,kills,today_donations,weekly_donations FROM alliance_player_history ORDER BY capture_date",
+  ).all<Record<string, unknown>>();
+  return result.results.map((row) => ({
+    lwmaPlayerId: String(row.lwma_player_id),
+    captureDate: String(row.capture_date),
+    power: Number(row.power),
+    level: row.level == null ? null : Number(row.level),
+    allianceRank: row.alliance_rank == null ? null : String(row.alliance_rank),
+    kills: row.kills == null ? null : Number(row.kills),
+    todayDonations:
+      row.today_donations == null ? null : Number(row.today_donations),
+    weeklyDonations:
+      row.weekly_donations == null ? null : Number(row.weekly_donations),
+  })) satisfies GrowthHistoryRecord[];
 }
