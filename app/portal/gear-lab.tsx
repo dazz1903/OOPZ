@@ -234,9 +234,11 @@ export function GearLab({
                 key={hero.name}
                 className="rounded-2xl border border-[#2e203b] bg-[#17101f] p-4"
               >
-                <div className="flex items-center justify-between">
-                  <p className="font-black">{hero.name}</p>
-                  <div className="flex items-center gap-2">
+                <div className="flex flex-wrap items-center justify-between gap-3">
+                  <p className="min-w-fit text-xl font-black tracking-[-.02em] text-white">
+                    {hero.name}
+                  </p>
+                  <div className="flex shrink-0 flex-wrap items-center gap-2">
                     {hero.availability === "future" && (
                       <span className="rounded-full bg-[#54203f] px-3 py-1 text-[10px] font-black text-[#ff91dc]">
                         FUTURE GEAR PREP

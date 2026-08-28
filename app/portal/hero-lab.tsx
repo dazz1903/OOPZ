@@ -178,11 +178,15 @@ export function HeroLab({
                         onChange={(e) =>
                           update(i, { name: e.target.value, skillLevels: {} })
                         }
-                        className="mt-1 w-full rounded-lg bg-[#25182e] px-3 py-2"
+                        className="mt-1 min-h-12 w-full rounded-xl border border-[#4c3158] bg-[#25182e] px-4 py-3 text-base font-black text-white outline-none focus:border-[#ff67cf]"
                       >
                         <option value="">Choose {focus} hero…</option>
                         {pool.map((hero) => (
-                          <option key={hero.name} value={hero.name}>
+                          <option
+                            key={hero.name}
+                            value={hero.name}
+                            className="bg-[#25182e] text-white"
+                          >
                             {hero.name} · {hero.rarity} ·{" "}
                             {verifiedHeroRole(hero.name, hero.role)}
                           </option>
