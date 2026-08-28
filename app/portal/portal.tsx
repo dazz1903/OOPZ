@@ -1448,7 +1448,7 @@ function GrowthChart({
     initialPlayerId ?? players[0]?.lwmaPlayerId ?? "",
   );
   const [metric, setMetric] = useState<
-    "power" | "level" | "kills" | "weeklyDonations"
+    "power" | "level" | "todayDonations" | "weeklyDonations"
   >("power");
   const points = history
     .filter((item) => item.lwmaPlayerId === selected)
@@ -1462,7 +1462,7 @@ function GrowthChart({
   const labels = {
     power: "Power",
     level: "HQ level",
-    kills: "Kills",
+    todayDonations: "Daily donations",
     weeklyDonations: "Weekly donations",
   };
   return (
