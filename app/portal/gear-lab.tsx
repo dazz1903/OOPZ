@@ -12,6 +12,7 @@ type SlotName = (typeof SLOTS)[number];
 type GearPiece = { level: number; stars: number };
 type HeroGear = {
   name: string;
+  availability: "active" | "future";
   role: "Attacker" | "Defender" | "Support";
   gear: Record<SlotName, GearPiece>;
 };
@@ -70,7 +71,9 @@ export function GearLab({
       ).heroes ?? [],
     vehicle = focus === "Air" ? "aircraft" : focus.toLowerCase();
   const selected = (
-    (heroProfile.heroes as Array<{ name?: string }> | undefined) ?? []
+    (heroProfile.heroes as
+      | Array<{ name?: string; availability?: "active" | "future" }>
+      | undefined) ?? []
   )
     .filter(
       (hero) =>
@@ -84,6 +87,7 @@ export function GearLab({
         saved.find((item) => item.name === hero.name) ?? saved[index];
       return {
         name: hero.name!,
+        availability: hero.availability ?? "active",
         role: role(hero.name!),
         gear: normalise(prior?.gear ?? prior?.levels),
       };
@@ -232,10 +236,23 @@ export function GearLab({
               >
                 <div className="flex items-center justify-between">
                   <p className="font-black">{hero.name}</p>
-                  <span className="rounded-full bg-[#2b1935] px-3 py-1 text-[10px] font-black text-[#e18ddd]">
-                    {hero.role}
-                  </span>
+                  <div className="flex items-center gap-2">
+                    {hero.availability === "future" && (
+                      <span className="rounded-full bg-[#54203f] px-3 py-1 text-[10px] font-black text-[#ff91dc]">
+                        FUTURE GEAR PREP
+                      </span>
+                    )}
+                    <span className="rounded-full bg-[#2b1935] px-3 py-1 text-[10px] font-black text-[#e18ddd]">
+                      {hero.role}
+                    </span>
+                  </div>
                 </div>
+                {hero.availability === "future" && (
+                  <p className="mt-2 text-xs text-[#c69ac1]">
+                    Build this set now and keep it ready to transfer when the
+                    hero releases.
+                  </p>
+                )}
                 <div className="mt-3 grid gap-2 sm:grid-cols-2 xl:grid-cols-4">
                   {SLOTS.map((slot) => (
                     <div key={slot} className="rounded-xl bg-[#21152a] p-3">

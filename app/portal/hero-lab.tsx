@@ -12,6 +12,7 @@ import {
 } from "@/lib/game-data/squad-guides";
 type Slot = {
   name: string;
+  availability: "active" | "future";
   level: number;
   star: number;
   steps: number;
@@ -20,6 +21,7 @@ type Slot = {
 type Profile = { vehicle: "tank" | "aircraft" | "missile"; heroes: Slot[] };
 const blank = (): Slot => ({
   name: "",
+  availability: "active",
   level: 1,
   star: 0,
   steps: 0,
@@ -53,7 +55,11 @@ export function HeroLab({
       const saved = seeded.heroes?.[i];
       return saved &&
         HEROES.find((hero) => hero.name === saved.name)?.vehicle === vehicle
-        ? { ...saved, skillLevels: saved.skillLevels ?? {} }
+        ? {
+            ...saved,
+            availability: saved.availability ?? "active",
+            skillLevels: saved.skillLevels ?? {},
+          }
         : blank();
     }),
   });
@@ -72,6 +78,7 @@ export function HeroLab({
   const nextSkills = useMemo(
     () =>
       profile.heroes
+        .filter((slot) => slot.availability === "active")
         .flatMap((slot, heroIndex) =>
           skillsFor(slot.name).map((skill) => ({
             hero: slot.name,
@@ -202,7 +209,34 @@ export function HeroLab({
                       onChange={(steps) => update(i, { steps })}
                     />
                   </div>
-                  {skills.length > 0 && (
+                  {slot.name && (
+                    <div className="mt-3 flex flex-wrap items-center gap-2">
+                      <span className="mr-1 text-[10px] font-black text-[#8e7d96]">
+                        SERVER STATUS
+                      </span>
+                      <button
+                        type="button"
+                        onClick={() => update(i, { availability: "active" })}
+                        className={`rounded-lg px-3 py-2 text-xs font-black ${slot.availability === "active" ? "bg-[#8b5cf6] text-white" : "bg-[#25182e] text-[#a68caf]"}`}
+                      >
+                        USING NOW
+                      </button>
+                      <button
+                        type="button"
+                        onClick={() => update(i, { availability: "future" })}
+                        className={`rounded-lg px-3 py-2 text-xs font-black ${slot.availability === "future" ? "bg-[#ec4899] text-white" : "bg-[#25182e] text-[#a68caf]"}`}
+                      >
+                        FUTURE · NOT RELEASED
+                      </button>
+                      {slot.availability === "future" && (
+                        <span className="text-xs text-[#ff91dc]">
+                          Gear preparation remains active; hero upgrades are
+                          paused.
+                        </span>
+                      )}
+                    </div>
+                  )}
+                  {skills.length > 0 && slot.availability === "active" && (
                     <div className="mt-4 grid gap-2 md:grid-cols-2">
                       {skills.map((skill) => (
                         <div
@@ -277,17 +311,30 @@ export function HeroLab({
             .map((slot) => (
               <div key={slot.name} className="rounded-xl bg-[#1b1222] p-4">
                 <p className="font-black">{slot.name}</p>
-                <p className="mt-2 text-xs text-[#b49fbc]">
-                  {compact(xpToReachLevel(slot.level, cap))} XP to {cap}
-                </p>
-                <p className="mt-1 text-xs text-[#b49fbc]">
-                  {shardsToStar(
-                    slot.star,
-                    slot.steps,
-                    Math.min(5, slot.star + 1),
-                  )}{" "}
-                  shards to next star
-                </p>
+                {slot.availability === "future" ? (
+                  <>
+                    <p className="mt-2 text-xs font-black text-[#ff75d5]">
+                      FUTURE HERO · NOT RELEASED
+                    </p>
+                    <p className="mt-1 text-xs text-[#b49fbc]">
+                      No hero resources assigned. Prepare UR gear in Gear Lab.
+                    </p>
+                  </>
+                ) : (
+                  <>
+                    <p className="mt-2 text-xs text-[#b49fbc]">
+                      {compact(xpToReachLevel(slot.level, cap))} XP to {cap}
+                    </p>
+                    <p className="mt-1 text-xs text-[#b49fbc]">
+                      {shardsToStar(
+                        slot.star,
+                        slot.steps,
+                        Math.min(5, slot.star + 1),
+                      )}{" "}
+                      shards to next star
+                    </p>
+                  </>
+                )}
               </div>
             ))}
         </div>
@@ -329,7 +376,8 @@ function Number({
           max={max}
           value={value}
           onChange={(e) => {
-            const entered = e.target.value === "" ? min : Number(e.target.value);
+            const entered =
+              e.target.value === "" ? min : Number(e.target.value);
             onChange(Math.min(max, Math.max(min, entered)));
           }}
           className="h-full min-w-0 flex-1 border-x border-[#4c3158] bg-black/30 px-1 text-center text-base font-black text-white outline-none [appearance:textfield]"
@@ -348,10 +396,49 @@ function Number({
   );
 }
 
-function SkillLevel({hero,skill,value,onChange}:{hero:string;skill:string;value:number;onChange:(value:number)=>void}) {
-  return <div className="flex shrink-0 items-center overflow-hidden rounded-xl border border-[#4c3158] bg-[#130d18]">
-    <button type="button" aria-label={`Decrease ${hero} ${skill}`} onClick={()=>onChange(value-1)} disabled={value<=0} className="grid h-10 w-9 place-items-center text-lg font-black text-[#d5b4df] hover:bg-[#2b1935] disabled:opacity-25">−</button>
-    <input aria-label={`${hero} ${skill} level`} type="number" inputMode="numeric" min="0" max="30" value={value} onChange={(e)=>onChange(e.target.value===''?0:Number(e.target.value))} className="h-10 w-12 border-x border-[#4c3158] bg-black/30 text-center text-base font-black text-white outline-none [appearance:textfield]" />
-    <button type="button" aria-label={`Increase ${hero} ${skill}`} onClick={()=>onChange(value+1)} disabled={value>=30} className="grid h-10 w-9 place-items-center text-lg font-black text-[#ff71d3] hover:bg-[#2b1935] disabled:opacity-25">+</button>
-  </div>;
+function SkillLevel({
+  hero,
+  skill,
+  value,
+  onChange,
+}: {
+  hero: string;
+  skill: string;
+  value: number;
+  onChange: (value: number) => void;
+}) {
+  return (
+    <div className="flex shrink-0 items-center overflow-hidden rounded-xl border border-[#4c3158] bg-[#130d18]">
+      <button
+        type="button"
+        aria-label={`Decrease ${hero} ${skill}`}
+        onClick={() => onChange(value - 1)}
+        disabled={value <= 0}
+        className="grid h-10 w-9 place-items-center text-lg font-black text-[#d5b4df] hover:bg-[#2b1935] disabled:opacity-25"
+      >
+        −
+      </button>
+      <input
+        aria-label={`${hero} ${skill} level`}
+        type="number"
+        inputMode="numeric"
+        min="0"
+        max="30"
+        value={value}
+        onChange={(e) =>
+          onChange(e.target.value === "" ? 0 : Number(e.target.value))
+        }
+        className="h-10 w-12 border-x border-[#4c3158] bg-black/30 text-center text-base font-black text-white outline-none [appearance:textfield]"
+      />
+      <button
+        type="button"
+        aria-label={`Increase ${hero} ${skill}`}
+        onClick={() => onChange(value + 1)}
+        disabled={value >= 30}
+        className="grid h-10 w-9 place-items-center text-lg font-black text-[#ff71d3] hover:bg-[#2b1935] disabled:opacity-25"
+      >
+        +
+      </button>
+    </div>
+  );
 }
