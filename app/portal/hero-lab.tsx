@@ -168,11 +168,28 @@ export function HeroLab({
                   key={i}
                   className="rounded-2xl border border-[#302039] bg-[#17101e] p-4"
                 >
-                  <div className="grid gap-3 sm:grid-cols-[1.5fr_.55fr_.55fr_.55fr]">
-                    <label>
-                      <span className="text-[10px] text-[#8e7d96]">
+                  <div className="mb-4 flex flex-wrap items-center justify-between gap-2">
+                    <div>
+                      <p className="text-[10px] font-black tracking-[.12em] text-[#8e7d96]">
                         POSITION {i + 1}
+                      </p>
+                      <p className="mt-1 text-2xl font-black text-white">
+                        {slot.name || `Choose ${focus} hero`}
+                      </p>
+                    </div>
+                    {slot.name && (
+                      <span
+                        className={`rounded-full px-3 py-2 text-[10px] font-black ${slot.availability === "future" ? "bg-[#54203f] text-[#ff91dc]" : "bg-[#32205b] text-[#c9b7ff]"}`}
+                      >
+                        {slot.availability === "future"
+                          ? "FUTURE HERO"
+                          : "USING NOW"}
                       </span>
+                    )}
+                  </div>
+                  <div className="grid gap-3 md:grid-cols-[minmax(250px,1fr)_126px_126px_126px]">
+                    <label>
+                      <span className="text-[10px] text-[#8e7d96]">HERO</span>
                       <select
                         value={slot.name}
                         onChange={(e) =>
