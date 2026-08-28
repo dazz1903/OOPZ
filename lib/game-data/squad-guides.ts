@@ -52,6 +52,7 @@ export const SQUAD_GUIDES: Record<
         name: "Stetmann",
         skills: [
           { name: "Lightning Rush", priority: 1 },
+          { name: "Critical Charge", priority: 2 },
           { name: "Orb Lightning", priority: 3 },
         ],
       },
@@ -60,20 +61,22 @@ export const SQUAD_GUIDES: Record<
         skills: [
           { name: "Iron Will", priority: 1 },
           { name: "All-Around Armor", priority: 1 },
-          { name: "Critical Charge", priority: 2 },
+          { name: "Blast Shell", priority: 3 },
         ],
       },
       {
         name: "Murphy",
         skills: [
-          { name: "Ironclad Tactics", priority: 1 },
+          { name: "Ironclad Barrier", priority: 1 },
           { name: "Stand Firm", priority: 2 },
+          { name: "Cannon Fire", priority: 3 },
         ],
       },
       {
         name: "Marshall",
         skills: [
           { name: "Command Strategy", priority: 1 },
+          { name: "Rapid Start", priority: 2 },
           { name: "Triad Harmony", priority: 3 },
         ],
       },
@@ -89,39 +92,39 @@ export const SQUAD_GUIDES: Record<
         skills: [
           { name: "Steel Barrage", priority: 1 },
           { name: "Vortex Missile", priority: 2 },
-          { name: "Armament Upgrade", priority: 3 },
+          { name: "Precision Upgrade", priority: 3 },
         ],
       },
       {
         name: "Morrison",
         skills: [
-          { name: "Knight's Spirit", priority: 1 },
-          { name: "Energy Adaptation", priority: 2 },
-          { name: "Lightning Triple Strike", priority: 3 },
+          { name: "Armor-Piercing Shot", priority: 1 },
+          { name: "Full Firepower", priority: 2 },
+          { name: "Full-Auto Machine Gun", priority: 3 },
         ],
       },
       {
         name: "Lucius",
         skills: [
-          { name: "Silver Armor", priority: 1 },
-          { name: "Full Firepower", priority: 2 },
-          { name: "Dual-string Rocket", priority: 3 },
+          { name: "Knight's Spirit", priority: 1 },
+          { name: "Silver Armor", priority: 2 },
+          { name: "Lightning Triple Strike", priority: 3 },
         ],
       },
       {
         name: "Carlie",
         skills: [
           { name: "Inferno Blaze", priority: 1 },
-          { name: "Full-Auto Machine", priority: 2 },
+          { name: "Energy Adaption", priority: 2 },
+          { name: "Dual-string Rocket", priority: 3 },
         ],
       },
       {
         name: "Schuyler",
         skills: [
-          { name: "Armor-Piercing Shot", priority: 1 },
-          { name: "Blast Frenzy", priority: 2 },
-          { name: "Lightning Chain", priority: 3 },
-          { name: "Antimatter Armor", priority: 3 },
+          { name: "Blast Frenzy", priority: 1 },
+          { name: "Antimatter Armor", priority: 2 },
+          { name: "Power Barrage", priority: 3 },
         ],
       },
     ],
@@ -134,14 +137,15 @@ export const SQUAD_GUIDES: Record<
       {
         name: "Swift",
         skills: [
-          { name: "Targeted Strike", priority: 1 },
+          { name: "Weakness Targeting", priority: 1 },
+          { name: "Targeted Strike", priority: 2 },
           { name: "Precise Guidance", priority: 3 },
         ],
       },
       {
         name: "Tesla",
         skills: [
-          { name: "Weakness Targeting", priority: 1 },
+          { name: "Electric Grid Lockdown", priority: 1 },
           { name: "Lightning Chain", priority: 2 },
           { name: "Electric Power Boost", priority: 3 },
         ],
@@ -149,24 +153,23 @@ export const SQUAD_GUIDES: Record<
       {
         name: "Adam",
         skills: [
-          { name: "Electric Grid Lockdown", priority: 1 },
-          { name: "Combat Defense", priority: 2 },
-          { name: "MM41 Vehicle-Mounted Machine Gun", priority: 3 },
+          { name: "Counter Defense", priority: 1 },
+          { name: "Spike Armor", priority: 2 },
+          { name: "MK43 Vehicle-Mounted Machine Gun", priority: 3 },
         ],
       },
       {
         name: "Fiona",
         skills: [
-          { name: "Spike Armor", priority: 1 },
-          { name: "Atomic Blast", priority: 2 },
-          { name: "Ballistic Boost", priority: 3 },
+          { name: "Atomic Blast", priority: 1 },
+          { name: "Radiation Passive", priority: 2 },
+          { name: "Double Trajectory", priority: 3 },
         ],
       },
       {
         name: "McGregor",
         skills: [
-          { name: "Double Trajectory", priority: 1 },
-          { name: "Unyielding Heart", priority: 2 },
+          { name: "Unyielding Heart", priority: 1 },
           { name: "HP Boost", priority: 2 },
           { name: "Forward Rush", priority: 3 },
         ],

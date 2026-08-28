@@ -62,11 +62,8 @@ export function HeroLab({
     const guided =
       guide.heroes.find((hero) => hero.name === name)?.skills ?? [];
     const hero = HEROES.find((item) => item.name === name);
-    const remaining = (hero?.skills ?? [])
-      .filter((skill) => !guided.some((item) => item.name === skill.name))
-      .map((skill) => ({ name: skill.name, priority: 3 as const }));
     return guided.length
-      ? [...guided, ...remaining]
+      ? guided
       : (hero?.skills.map((skill, index) => ({
           name: skill.name,
           priority: Math.min(3, index + 1) as 1 | 2 | 3,
@@ -208,7 +205,7 @@ export function HeroLab({
                   {skills.length > 0 && (
                     <div className="mt-4 grid gap-2 md:grid-cols-2">
                       {skills.map((skill) => (
-                        <label
+                        <div
                           key={skill.name}
                           className="flex items-center gap-3 rounded-xl bg-[#21152a] p-3"
                         >
@@ -220,18 +217,13 @@ export function HeroLab({
                           <span className="min-w-0 flex-1 text-sm font-bold">
                             {skill.name}
                           </span>
-                          <input
-                            aria-label={`${slot.name} ${skill.name} level`}
-                            type="number"
-                            min="0"
-                            max="30"
+                          <SkillLevel
+                            hero={slot.name}
+                            skill={skill.name}
                             value={slot.skillLevels[skill.name] ?? 0}
-                            onChange={(e) =>
-                              setSkill(i, skill.name, Number(e.target.value))
-                            }
-                            className="w-16 rounded-lg bg-[#130d18] px-2 py-2 text-center font-black"
+                            onChange={(value) => setSkill(i, skill.name, value)}
                           />
-                        </label>
+                        </div>
                       ))}
                     </div>
                   )}
@@ -331,4 +323,12 @@ function Number({
       />
     </label>
   );
+}
+
+function SkillLevel({hero,skill,value,onChange}:{hero:string;skill:string;value:number;onChange:(value:number)=>void}) {
+  return <div className="flex shrink-0 items-center overflow-hidden rounded-xl border border-[#4c3158] bg-[#130d18]">
+    <button type="button" aria-label={`Decrease ${hero} ${skill}`} onClick={()=>onChange(value-1)} disabled={value<=0} className="grid h-10 w-9 place-items-center text-lg font-black text-[#d5b4df] hover:bg-[#2b1935] disabled:opacity-25">−</button>
+    <input aria-label={`${hero} ${skill} level`} type="number" inputMode="numeric" min="0" max="30" value={value} onChange={(e)=>onChange(e.target.value===''?0:Number(e.target.value))} className="h-10 w-12 border-x border-[#4c3158] bg-black/30 text-center text-base font-black text-white outline-none [appearance:textfield]" />
+    <button type="button" aria-label={`Increase ${hero} ${skill}`} onClick={()=>onChange(value+1)} disabled={value>=30} className="grid h-10 w-9 place-items-center text-lg font-black text-[#ff71d3] hover:bg-[#2b1935] disabled:opacity-25">+</button>
+  </div>;
 }
