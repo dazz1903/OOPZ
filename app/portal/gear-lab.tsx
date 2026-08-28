@@ -1,21 +1,391 @@
-'use client';
-import {useMemo,useState} from 'react';
-import {HEROES} from '@/lib/game-data/hero-data';
-import {GEAR_COSTS,SQUAD_GUIDES,type TroopFocus} from '@/lib/game-data/squad-guides';
-const SLOTS=['Gun','Data Chip','Armor','Radar'] as const; type SlotName=typeof SLOTS[number]; type GearPiece={level:number;stars:number}; type HeroGear={name:string;role:'Attacker'|'Defender'|'Support';gear:Record<SlotName,GearPiece>}; type Profile={heroes:HeroGear[]};
-const emptyGear=():Record<SlotName,GearPiece>=>({Gun:{level:0,stars:0},'Data Chip':{level:0,stars:0},Armor:{level:0,stars:0},Radar:{level:0,stars:0}}); const short=(n:number)=>new Intl.NumberFormat('en',{notation:'compact',maximumFractionDigits:1}).format(n);
-function role(name:string):HeroGear['role']{const found=HEROES.find(hero=>hero.name===name);return found?.role==='dps'?'Attacker':found?.role==='tank'?'Defender':'Support'}
-function normalise(saved:unknown):Record<SlotName,GearPiece>{if(saved&&typeof saved==='object'&&!Array.isArray(saved)){const source=saved as Partial<Record<SlotName,GearPiece>>;return Object.fromEntries(SLOTS.map(slot=>[slot,{level:Number(source[slot]?.level??0),stars:Number(source[slot]?.stars??0)}])) as Record<SlotName,GearPiece>}if(Array.isArray(saved))return Object.fromEntries(SLOTS.map((slot,i)=>[slot,{level:Number(saved[i]??0),stars:0}])) as Record<SlotName,GearPiece>;return emptyGear()}
-export function GearLab({initial,heroProfile,focus}:{initial:Record<string,unknown>;heroProfile:Record<string,unknown>;focus:TroopFocus}){
- const saved=((initial as {heroes?:Array<{name:string;gear?:unknown;levels?:number[]}>}).heroes??[]),vehicle=focus==='Air'?'aircraft':focus.toLowerCase();const selected=((heroProfile.heroes as Array<{name?:string}>|undefined)??[]).filter(hero=>hero.name&&HEROES.find(item=>item.name===hero.name)?.vehicle===vehicle).slice(0,5);
- const [p,setP]=useState<Profile>(()=>({heroes:selected.map((hero,index)=>{const prior=saved.find(item=>item.name===hero.name)??saved[index];return{name:hero.name!,role:role(hero.name!),gear:normalise(prior?.gear??prior?.levels)}})}));const [message,setMessage]=useState('');
- function piece(hero:number,slot:SlotName,patch:Partial<GearPiece>){setP(x=>({...x,heroes:x.heroes.map((item,i)=>i===hero?{...item,gear:{...item.gear,[slot]:{...item.gear[slot],...patch}}}:item)}))}async function save(){const r=await fetch('/api/labs',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({kind:'gear',profile:p})});setMessage(r.ok?'Complete gear profile saved.':'Could not save gear profile.')}
- const plan=useMemo(()=>{const actions:Array<{heroIndex:number;slot:SlotName;targetLevel?:number;targetStars?:number;stage:string}>=[];const add=(roles:HeroGear['role'][]|null,slots:SlotName[],targetLevel?:number,targetStars?:number,stage='')=>p.heroes.forEach((hero,heroIndex)=>{if(roles&&!roles.includes(hero.role))return;slots.forEach(slot=>{const current=hero.gear[slot];if((targetLevel&&current.level<targetLevel)||(targetStars&&current.stars<targetStars))actions.push({heroIndex,slot,targetLevel,targetStars,stage})})});add(null,[...SLOTS],10,undefined,'Create UR gear and establish the base');add(['Attacker'],['Gun'],40,undefined,'Primary damage');add(['Defender'],['Radar'],40,undefined,'Front-line resistance');add(['Attacker'],['Data Chip'],40,undefined,'Secondary damage');add(['Defender'],['Armor'],20,undefined,'Initial front-line durability');add(['Attacker'],['Gun'],40,1,'First attacker star');add(['Support'],['Gun','Data Chip'],20,undefined,'Support baseline');add(['Attacker'],['Data Chip'],40,1,'First chip star');add(null,['Radar','Armor'],40,undefined,'Squad durability');add(['Attacker'],['Gun','Data Chip'],40,4,'Primary damage to four stars');add(['Defender'],['Radar'],40,5,'Defender radar to five stars');add(null,[...SLOTS],40,1,'All gear to one star');add(['Defender'],['Armor'],40,4,'Defender armor to four stars');return actions.filter((action,index,array)=>array.findIndex(other=>other.heroIndex===action.heroIndex&&other.slot===action.slot&&other.targetLevel===action.targetLevel&&other.targetStars===action.targetStars)===index)},[p]);
- if(!selected.length)return <><p className="text-sm font-black text-[#ff4fc8]">GEAR DEVELOPMENT LAB</p><h1 className="mt-2 text-4xl font-black">Hero setup required.</h1><div className="mt-6 rounded-3xl border border-[#4a2857] bg-[#100b17] p-8 text-[#b6a4be]">Choose and save your five {focus} heroes in Hero Lab first. Gear Lab will import them automatically.</div></>;
- return <><p className="text-sm font-black text-[#ff4fc8]">GEAR DEVELOPMENT LAB · {focus.toUpperCase()} T1</p><h1 className="mt-2 text-4xl font-black tracking-[-.04em]">The complete UR gear route.</h1><div className="mt-5 grid gap-3 md:grid-cols-3"><Rule text="Only invest in UR gear."/><Rule text="Upgrade in 10-level increments."/><Rule text="Buy blueprints whenever available."/></div>
- <div className="mt-6 grid gap-5 xl:grid-cols-[1.25fr_.75fr]"><section className="rounded-3xl border border-[#3b2450] bg-[#100b17] p-6"><div className="flex flex-wrap items-center justify-between gap-3"><div><h2 className="text-xl font-black">Saved squad gear</h2><p className="mt-1 text-xs text-[#9a89a8]">Heroes and roles are synced from Hero Lab.</p></div><button onClick={save} className="w-full rounded-xl bg-gradient-to-r from-[#a855f7] to-[#ec4899] px-8 py-4 font-black sm:w-auto">SAVE ALL GEAR</button></div>{message&&<p className="mt-3 text-sm text-[#ff8fda]">{message}</p>}<div className="mt-5 space-y-3">{p.heroes.map((hero,i)=><div key={hero.name} className="rounded-2xl border border-[#2e203b] bg-[#17101f] p-4"><div className="flex items-center justify-between"><p className="font-black">{hero.name}</p><span className="rounded-full bg-[#2b1935] px-3 py-1 text-[10px] font-black text-[#e18ddd]">{hero.role}</span></div><div className="mt-3 grid gap-2 sm:grid-cols-2 xl:grid-cols-4">{SLOTS.map(slot=><div key={slot} className="rounded-xl bg-[#21152a] p-3"><p className="text-xs font-black text-[#c9b2d0]">{slot}</p><div className="mt-2 grid grid-cols-2 gap-2"><label><span className="text-[9px] text-[#86748e]">LEVEL</span><input type="number" min="0" max="40" step="10" value={hero.gear[slot].level} onChange={e=>piece(i,slot,{level:Math.min(40,Math.max(0,Number(e.target.value)))})} className="mt-1 w-full rounded-lg bg-[#130d18] px-2 py-2 text-center font-black"/></label><label><span className="text-[9px] text-[#86748e]">STARS</span><input type="number" min="0" max="5" value={hero.gear[slot].stars} onChange={e=>piece(i,slot,{stars:Math.min(5,Math.max(0,Number(e.target.value)))})} className="mt-1 w-full rounded-lg bg-[#130d18] px-2 py-2 text-center font-black"/></label></div></div>)}</div></div>)}</div></section>
- <aside className="self-start rounded-3xl border border-[#3b2450] bg-[#100b17] p-5"><p className="text-xs font-black tracking-[.14em] text-[#9d7caf]">NEXT GEAR MOVES</p><div className="mt-4 space-y-3">{plan.slice(0,12).map((action,index)=>{const hero=p.heroes[action.heroIndex],piece=hero.gear[action.slot];return <div key={`${action.heroIndex}-${action.slot}-${action.targetLevel}-${action.targetStars}`} className="rounded-xl bg-[#1b1224] p-3"><p className="font-black"><span className="text-[#ff4fc8]">{index+1}.</span> {hero.name}: {action.slot}</p><p className="mt-1 text-sm">{piece.level}/{piece.stars}★ → {action.targetLevel??piece.level}/{action.targetStars??piece.stars}★</p><p className="mt-1 text-[10px] font-black text-[#9f7ba9]">{action.stage.toUpperCase()}</p></div>})}</div><p className="mt-4 text-xs leading-5 text-[#9e8aa6]">Tank follows the named guide directly. Air and Missile apply the same published sequence to equivalent attacker, defender and support roles.</p></aside></div>
- <section className="mt-6 rounded-3xl border border-[#3b2450] bg-[#100b17] p-6"><div><h2 className="text-xl font-black">Gear upgrade costs</h2><p className="mt-1 text-xs text-[#96849e]">Per UR gear piece, exactly as shown in the supplied crafting guide.</p></div><div className="mt-5 overflow-auto"><table className="w-full min-w-[680px] text-left"><thead className="text-[10px] uppercase tracking-[.12em] text-[#937d9c]"><tr><th className="pb-3">Upgrade</th><th>Gold</th><th>Ore</th><th>Ceramic</th><th>Blueprints</th></tr></thead><tbody>{GEAR_COSTS.map(cost=><tr key={`${cost.from}-${cost.to}`} className="border-t border-[#2e2038]"><td className="py-3 font-black">{cost.from} → {cost.to}</td><td>{short(cost.gold)}</td><td>{short(cost.ore)}</td><td>{cost.ceramic?cost.ceramic.toLocaleString():'—'}</td><td>{cost.blueprints?`${cost.blueprints} ${'mythic' in cost&&cost.mythic?'Mythic':'UR'}`:'—'}</td></tr>)}</tbody></table></div></section>
- <section className="mt-6 rounded-3xl border border-[#3b2450] bg-[#100b17] p-6"><p className="text-xs font-black text-[#ff72d3]">GUIDE SQUAD ORDER</p><p className="mt-2 text-lg font-black">{SQUAD_GUIDES[focus].levelAdvice}</p><p className="mt-2 text-sm text-[#a996b2]">{SQUAD_GUIDES[focus].starAdvice}</p></section></>;
+"use client";
+import { useMemo, useState } from "react";
+import { HEROES } from "@/lib/game-data/hero-data";
+import {
+  GEAR_COSTS,
+  SQUAD_GUIDES,
+  verifiedHeroRole,
+  type TroopFocus,
+} from "@/lib/game-data/squad-guides";
+const SLOTS = ["Gun", "Data Chip", "Armor", "Radar"] as const;
+type SlotName = (typeof SLOTS)[number];
+type GearPiece = { level: number; stars: number };
+type HeroGear = {
+  name: string;
+  role: "Attacker" | "Defender" | "Support";
+  gear: Record<SlotName, GearPiece>;
+};
+type Profile = { heroes: HeroGear[] };
+const emptyGear = (): Record<SlotName, GearPiece> => ({
+  Gun: { level: 0, stars: 0 },
+  "Data Chip": { level: 0, stars: 0 },
+  Armor: { level: 0, stars: 0 },
+  Radar: { level: 0, stars: 0 },
+});
+const short = (n: number) =>
+  new Intl.NumberFormat("en", {
+    notation: "compact",
+    maximumFractionDigits: 1,
+  }).format(n);
+function role(name: string): HeroGear["role"] {
+  const found = HEROES.find((hero) => hero.name === name);
+  return verifiedHeroRole(name, found?.role);
 }
-function Rule({text}:{text:string}){return <div className="rounded-2xl border border-[#3d2748] bg-[#130c19] p-4 text-sm font-black"><span className="mr-2 text-[#ff5fcf]">✓</span>{text}</div>}
+function normalise(saved: unknown): Record<SlotName, GearPiece> {
+  if (saved && typeof saved === "object" && !Array.isArray(saved)) {
+    const source = saved as Partial<Record<SlotName, GearPiece>>;
+    return Object.fromEntries(
+      SLOTS.map((slot) => [
+        slot,
+        {
+          level: Number(source[slot]?.level ?? 0),
+          stars: Number(source[slot]?.stars ?? 0),
+        },
+      ]),
+    ) as Record<SlotName, GearPiece>;
+  }
+  if (Array.isArray(saved))
+    return Object.fromEntries(
+      SLOTS.map((slot, i) => [
+        slot,
+        { level: Number(saved[i] ?? 0), stars: 0 },
+      ]),
+    ) as Record<SlotName, GearPiece>;
+  return emptyGear();
+}
+export function GearLab({
+  initial,
+  heroProfile,
+  focus,
+}: {
+  initial: Record<string, unknown>;
+  heroProfile: Record<string, unknown>;
+  focus: TroopFocus;
+}) {
+  const saved =
+      (
+        initial as {
+          heroes?: Array<{ name: string; gear?: unknown; levels?: number[] }>;
+        }
+      ).heroes ?? [],
+    vehicle = focus === "Air" ? "aircraft" : focus.toLowerCase();
+  const selected = (
+    (heroProfile.heroes as Array<{ name?: string }> | undefined) ?? []
+  )
+    .filter(
+      (hero) =>
+        hero.name &&
+        HEROES.find((item) => item.name === hero.name)?.vehicle === vehicle,
+    )
+    .slice(0, 5);
+  const [p, setP] = useState<Profile>(() => ({
+    heroes: selected.map((hero, index) => {
+      const prior =
+        saved.find((item) => item.name === hero.name) ?? saved[index];
+      return {
+        name: hero.name!,
+        role: role(hero.name!),
+        gear: normalise(prior?.gear ?? prior?.levels),
+      };
+    }),
+  }));
+  const [message, setMessage] = useState("");
+  function piece(hero: number, slot: SlotName, patch: Partial<GearPiece>) {
+    setP((x) => ({
+      ...x,
+      heroes: x.heroes.map((item, i) =>
+        i === hero
+          ? {
+              ...item,
+              gear: { ...item.gear, [slot]: { ...item.gear[slot], ...patch } },
+            }
+          : item,
+      ),
+    }));
+  }
+  async function save() {
+    const r = await fetch("/api/labs", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ kind: "gear", profile: p }),
+    });
+    setMessage(
+      r.ok ? "Complete gear profile saved." : "Could not save gear profile.",
+    );
+  }
+  const plan = useMemo(() => {
+    const actions: Array<{
+      heroIndex: number;
+      slot: SlotName;
+      targetLevel?: number;
+      targetStars?: number;
+      stage: string;
+    }> = [];
+    const add = (
+      roles: HeroGear["role"][] | null,
+      slots: SlotName[],
+      targetLevel?: number,
+      targetStars?: number,
+      stage = "",
+    ) =>
+      p.heroes.forEach((hero, heroIndex) => {
+        if (roles && !roles.includes(hero.role)) return;
+        slots.forEach((slot) => {
+          const current = hero.gear[slot];
+          if (
+            (targetLevel && current.level < targetLevel) ||
+            (targetStars && current.stars < targetStars)
+          )
+            actions.push({ heroIndex, slot, targetLevel, targetStars, stage });
+        });
+      });
+    add(
+      null,
+      [...SLOTS],
+      10,
+      undefined,
+      "Create UR gear and establish the base",
+    );
+    add(["Attacker"], ["Gun"], 40, undefined, "Primary damage");
+    add(["Defender"], ["Radar"], 40, undefined, "Front-line resistance");
+    add(["Attacker"], ["Data Chip"], 40, undefined, "Secondary damage");
+    add(
+      ["Defender"],
+      ["Armor"],
+      20,
+      undefined,
+      "Initial front-line durability",
+    );
+    add(["Attacker"], ["Gun"], 40, 1, "First attacker star");
+    add(["Support"], ["Gun", "Data Chip"], 20, undefined, "Support baseline");
+    add(["Attacker"], ["Data Chip"], 40, 1, "First chip star");
+    add(null, ["Radar", "Armor"], 40, undefined, "Squad durability");
+    add(
+      ["Attacker"],
+      ["Gun", "Data Chip"],
+      40,
+      4,
+      "Primary damage to four stars",
+    );
+    add(["Defender"], ["Radar"], 40, 5, "Defender radar to five stars");
+    add(null, [...SLOTS], 40, 1, "All gear to one star");
+    add(["Defender"], ["Armor"], 40, 4, "Defender armor to four stars");
+    return actions.filter(
+      (action, index, array) =>
+        array.findIndex(
+          (other) =>
+            other.heroIndex === action.heroIndex &&
+            other.slot === action.slot &&
+            other.targetLevel === action.targetLevel &&
+            other.targetStars === action.targetStars,
+        ) === index,
+    );
+  }, [p]);
+  if (!selected.length)
+    return (
+      <>
+        <p className="text-sm font-black text-[#ff4fc8]">
+          GEAR DEVELOPMENT LAB
+        </p>
+        <h1 className="mt-2 text-4xl font-black">Hero setup required.</h1>
+        <div className="mt-6 rounded-3xl border border-[#4a2857] bg-[#100b17] p-8 text-[#b6a4be]">
+          Choose and save your five {focus} heroes in Hero Lab first. Gear Lab
+          will import them automatically.
+        </div>
+      </>
+    );
+  return (
+    <>
+      <p className="text-sm font-black text-[#ff4fc8]">
+        GEAR DEVELOPMENT LAB · {focus.toUpperCase()} T1
+      </p>
+      <h1 className="mt-2 text-4xl font-black tracking-[-.04em]">
+        The complete UR gear route.
+      </h1>
+      <div className="mt-5 grid gap-3 md:grid-cols-3">
+        <Rule text="Only invest in UR gear." />
+        <Rule text="Upgrade in 10-level increments." />
+        <Rule text="Buy blueprints whenever available." />
+      </div>
+      <div className="mt-6 grid gap-5 xl:grid-cols-[1.25fr_.75fr]">
+        <section className="rounded-3xl border border-[#3b2450] bg-[#100b17] p-6">
+          <div className="flex flex-wrap items-center justify-between gap-3">
+            <div>
+              <h2 className="text-xl font-black">Saved squad gear</h2>
+              <p className="mt-1 text-xs text-[#9a89a8]">
+                Heroes and roles are synced from Hero Lab.
+              </p>
+            </div>
+            <button
+              onClick={save}
+              className="w-full rounded-xl bg-gradient-to-r from-[#a855f7] to-[#ec4899] px-8 py-4 font-black sm:w-auto"
+            >
+              SAVE ALL GEAR
+            </button>
+          </div>
+          {message && <p className="mt-3 text-sm text-[#ff8fda]">{message}</p>}
+          <div className="mt-5 space-y-3">
+            {p.heroes.map((hero, i) => (
+              <div
+                key={hero.name}
+                className="rounded-2xl border border-[#2e203b] bg-[#17101f] p-4"
+              >
+                <div className="flex items-center justify-between">
+                  <p className="font-black">{hero.name}</p>
+                  <span className="rounded-full bg-[#2b1935] px-3 py-1 text-[10px] font-black text-[#e18ddd]">
+                    {hero.role}
+                  </span>
+                </div>
+                <div className="mt-3 grid gap-2 sm:grid-cols-2 xl:grid-cols-4">
+                  {SLOTS.map((slot) => (
+                    <div key={slot} className="rounded-xl bg-[#21152a] p-3">
+                      <p className="text-xs font-black text-[#c9b2d0]">
+                        {slot}
+                      </p>
+                      <div className="mt-2 grid grid-cols-2 gap-2">
+                        <label>
+                          <span className="text-[9px] text-[#86748e]">
+                            LEVEL
+                          </span>
+                          <input
+                            type="number"
+                            min="0"
+                            max="40"
+                            step="10"
+                            value={hero.gear[slot].level}
+                            onChange={(e) =>
+                              piece(i, slot, {
+                                level: Math.min(
+                                  40,
+                                  Math.max(0, Number(e.target.value)),
+                                ),
+                              })
+                            }
+                            className="mt-1 w-full rounded-lg bg-[#130d18] px-2 py-2 text-center font-black"
+                          />
+                        </label>
+                        <label>
+                          <span className="text-[9px] text-[#86748e]">
+                            STARS
+                          </span>
+                          <input
+                            type="number"
+                            min="0"
+                            max="5"
+                            value={hero.gear[slot].stars}
+                            onChange={(e) =>
+                              piece(i, slot, {
+                                stars: Math.min(
+                                  5,
+                                  Math.max(0, Number(e.target.value)),
+                                ),
+                              })
+                            }
+                            className="mt-1 w-full rounded-lg bg-[#130d18] px-2 py-2 text-center font-black"
+                          />
+                        </label>
+                      </div>
+                    </div>
+                  ))}
+                </div>
+              </div>
+            ))}
+          </div>
+        </section>
+        <aside className="self-start rounded-3xl border border-[#3b2450] bg-[#100b17] p-5">
+          <p className="text-xs font-black tracking-[.14em] text-[#9d7caf]">
+            NEXT GEAR MOVES
+          </p>
+          <div className="mt-4 space-y-3">
+            {plan.slice(0, 12).map((action, index) => {
+              const hero = p.heroes[action.heroIndex],
+                piece = hero.gear[action.slot];
+              return (
+                <div
+                  key={`${action.heroIndex}-${action.slot}-${action.targetLevel}-${action.targetStars}`}
+                  className="rounded-xl bg-[#1b1224] p-3"
+                >
+                  <p className="font-black">
+                    <span className="text-[#ff4fc8]">{index + 1}.</span>{" "}
+                    {hero.name}: {action.slot}
+                  </p>
+                  <p className="mt-1 text-sm">
+                    {piece.level}/{piece.stars}★ →{" "}
+                    {action.targetLevel ?? piece.level}/
+                    {action.targetStars ?? piece.stars}★
+                  </p>
+                  <p className="mt-1 text-[10px] font-black text-[#9f7ba9]">
+                    {action.stage.toUpperCase()}
+                  </p>
+                </div>
+              );
+            })}
+          </div>
+          <p className="mt-4 text-xs leading-5 text-[#9e8aa6]">
+            Tank follows the named guide directly. Air and Missile apply the
+            same published sequence to equivalent attacker, defender and support
+            roles.
+          </p>
+        </aside>
+      </div>
+      <section className="mt-6 rounded-3xl border border-[#3b2450] bg-[#100b17] p-6">
+        <div>
+          <h2 className="text-xl font-black">Gear upgrade costs</h2>
+          <p className="mt-1 text-xs text-[#96849e]">
+            Per UR gear piece, exactly as shown in the supplied crafting guide.
+          </p>
+        </div>
+        <div className="mt-5 overflow-auto">
+          <table className="w-full min-w-[680px] text-left">
+            <thead className="text-[10px] uppercase tracking-[.12em] text-[#937d9c]">
+              <tr>
+                <th className="pb-3">Upgrade</th>
+                <th>Gold</th>
+                <th>Ore</th>
+                <th>Ceramic</th>
+                <th>Blueprints</th>
+              </tr>
+            </thead>
+            <tbody>
+              {GEAR_COSTS.map((cost) => (
+                <tr
+                  key={`${cost.from}-${cost.to}`}
+                  className="border-t border-[#2e2038]"
+                >
+                  <td className="py-3 font-black">
+                    {cost.from} → {cost.to}
+                  </td>
+                  <td>{short(cost.gold)}</td>
+                  <td>{short(cost.ore)}</td>
+                  <td>{cost.ceramic ? cost.ceramic.toLocaleString() : "—"}</td>
+                  <td>
+                    {cost.blueprints
+                      ? `${cost.blueprints} ${"mythic" in cost && cost.mythic ? "Mythic" : "UR"}`
+                      : "—"}
+                  </td>
+                </tr>
+              ))}
+            </tbody>
+          </table>
+        </div>
+      </section>
+      <section className="mt-6 rounded-3xl border border-[#3b2450] bg-[#100b17] p-6">
+        <p className="text-xs font-black text-[#ff72d3]">GUIDE SQUAD ORDER</p>
+        <p className="mt-2 text-lg font-black">
+          {SQUAD_GUIDES[focus].levelAdvice}
+        </p>
+        <p className="mt-2 text-sm text-[#a996b2]">
+          {SQUAD_GUIDES[focus].starAdvice}
+        </p>
+      </section>
+    </>
+  );
+}
+function Rule({ text }: { text: string }) {
+  return (
+    <div className="rounded-2xl border border-[#3d2748] bg-[#130c19] p-4 text-sm font-black">
+      <span className="mr-2 text-[#ff5fcf]">✓</span>
+      {text}
+    </div>
+  );
+}
