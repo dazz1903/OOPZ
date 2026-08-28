@@ -17,7 +17,7 @@ export interface HQRequirement {
 
 export const HQ_PREREQUISITES: Record<number, HQRequirement[]> = {
   1:  [],
-  2:  [{ building: 'Drill Ground', level: 1 }, { building: 'Parking Lot', level: 1 }],
+  2:  [{ building: 'Drill Ground', level: 1 }],
   3:  [{ building: 'Wall', level: 2 }],
   4:  [{ building: 'Barracks', level: 3 }, { building: 'Drill Ground', level: 3 }],
   5:  [{ building: 'Wall', level: 4 }, { building: 'Barracks', level: 4 }],
@@ -73,7 +73,6 @@ export const BUILDINGS: BuildingDef[] = [
   { name: 'Drill Ground', maxLevel: 35, category: 'combat', priority: 1, requiresAgeOfOil: false, hqUnlockLevel: 1, buff: 'March slots & speed' },
   { name: 'Hospital', maxLevel: 35, category: 'combat', priority: 1, requiresAgeOfOil: false, hqUnlockLevel: 2, buff: 'Hospital beds & healing speed' },
   { name: 'Alliance Center', maxLevel: 35, category: 'combat', priority: 1, requiresAgeOfOil: false, hqUnlockLevel: 4, buff: 'Alliance donations & healing bonus' },
-  { name: 'Parking Lot', maxLevel: 35, category: 'combat', priority: 1, requiresAgeOfOil: false, hqUnlockLevel: 1, buff: 'March queue capacity' },
   { name: 'Air Center', maxLevel: 35, category: 'hero', priority: 2, requiresAgeOfOil: false, hqUnlockLevel: 12, buff: 'Aircraft training & stats' },
   { name: 'Missile Center', maxLevel: 35, category: 'hero', priority: 2, requiresAgeOfOil: false, hqUnlockLevel: 11, buff: 'Missile training & stats' },
   { name: 'Tavern', maxLevel: 35, category: 'hero', priority: 2, requiresAgeOfOil: false, hqUnlockLevel: 1, buff: 'Hero recruitment & star-up slots' },
